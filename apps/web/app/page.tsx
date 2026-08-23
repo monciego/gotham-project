@@ -18,9 +18,26 @@ const ThemeImage = (props: Props) => {
   );
 };
 
+async function getMessage() {
+  try {
+    const response = await fetch("http://localhost:8080/api/hello");
+
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to connect to Gotham API:", error);
+
+    return {
+      message: "Gotham API is currently unavailable.",
+    };
+  }
+}
+
 export default async function Home() {
-  const response = await fetch("http://localhost:8080/api/hello");
-  const data = await response.json();
+  const data = await getMessage();
 
   return (
     <div className={styles.page}>
