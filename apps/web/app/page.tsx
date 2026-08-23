@@ -18,10 +18,14 @@ const ThemeImage = (props: Props) => {
   );
 };
 
-export default function Home() {
+export default async function Home() {
+  const response = await fetch("http://localhost:8080/api/hello");
+  const data = await response.json();
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
+        <h1>{data.message}</h1>
         <ThemeImage
           className={styles.logo}
           srcLight="turborepo-dark.svg"
