@@ -1,6 +1,7 @@
 import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
+import { Button } from "@gotham/ui/components/ui/button";
 import styles from "./page.module.css";
+import { Card } from "@gotham/ui/components/ui/card";
 
 type Props = Omit<ImageProps, "src"> & {
   srcLight: string;
@@ -31,7 +32,9 @@ export default function Home() {
           height={38}
           priority
         />
-        <h1 className="bg-red-600">docs</h1>
+        <Card>
+          <h1 className="bg-red-600">docs</h1>
+        </Card>
         <ol>
           <li>
             Get started by editing <code>apps/docs/app/page.tsx</code>
@@ -64,9 +67,7 @@ export default function Home() {
             Read our docs
           </a>
         </div>
-        <Button appName="docs" className={styles.secondary}>
-          Open alert
-        </Button>
+        <Button>Open alert</Button>
       </main>
       <footer className={styles.footer}>
         <a

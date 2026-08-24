@@ -1,5 +1,5 @@
+import { Button } from "@gotham/ui/components/ui/button";
 import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
 import styles from "./page.module.css";
 
 type Props = Omit<ImageProps, "src"> & {
@@ -59,7 +59,7 @@ export default async function Home() {
           </li>
           <li>Save and see your changes instantly.</li>
         </ol>
-
+        <Button>Hello Gotham</Button>
         <div className={styles.ctas}>
           <a
             className={styles.primary}
@@ -85,9 +85,6 @@ export default async function Home() {
             Read our docs
           </a>
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
       </main>
       <footer className={styles.footer}>
         <a
