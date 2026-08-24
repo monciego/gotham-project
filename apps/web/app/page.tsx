@@ -42,7 +42,8 @@ export default async function Home() {
   return (
     <div className={styles.page}>
       <main className={styles.main}>
-        <h1>{data.message}</h1>
+        <h1 className="text-2xl font-mono">{data.message}</h1>
+        <h1 className="bg-red-600">web</h1>
         <ThemeImage
           className={styles.logo}
           srcLight="turborepo-dark.svg"

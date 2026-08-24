@@ -31,6 +31,7 @@ export default function Home() {
           height={38}
           priority
         />
+        <h1 className="bg-red-600">docs</h1>
         <ol>
           <li>
             Get started by editing <code>apps/docs/app/page.tsx</code>
