@@ -4,6 +4,7 @@ use App\Http\Controllers\AlfredMessageController;
 use App\Http\Controllers\ArsenalCheckInController;
 use App\Http\Controllers\ArsenalController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FocusSessionController;
@@ -11,6 +12,8 @@ use App\Http\Controllers\HelloController;
 use App\Http\Controllers\IntelController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\MissionDependencyController;
+use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\SavingsGoalController;
 use App\Http\Controllers\SubtaskController;
 use Illuminate\Support\Facades\Route;
 
@@ -94,6 +97,37 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/intel/{intel}', 'show')->whereNumber('intel');
         Route::put('/intel/{intel}', 'update')->whereNumber('intel');
         Route::delete('/intel/{intel}', 'destroy')->whereNumber('intel');
+    });
+
+    Route::controller(ResourceController::class)->group(function () {
+        Route::get('/resources', 'index');
+        Route::post('/resources', 'store');
+        Route::get('/resources/summary', 'summary');
+        Route::get('/resources/categories', 'categories');
+        Route::get('/resources/export', 'export');
+        Route::post('/resources/bulk-delete', 'bulkDestroy');
+        Route::get('/resources/{resource}', 'show')->whereNumber('resource');
+        Route::put('/resources/{resource}', 'update')->whereNumber('resource');
+        Route::delete('/resources/{resource}', 'destroy')->whereNumber('resource');
+    });
+
+    Route::controller(BudgetController::class)->group(function () {
+        Route::get('/budgets', 'index');
+        Route::post('/budgets', 'store');
+        Route::put('/budgets', 'sync');
+        Route::get('/budgets/recommendations', 'recommendations');
+        Route::put('/budgets/{budget}', 'update')->whereNumber('budget');
+        Route::delete('/budgets/{budget}', 'destroy')->whereNumber('budget');
+    });
+
+    Route::controller(SavingsGoalController::class)->group(function () {
+        Route::get('/savings-goals', 'index');
+        Route::post('/savings-goals', 'store');
+        Route::get('/savings-goals/{goal}', 'show')->whereNumber('goal');
+        Route::put('/savings-goals/{goal}', 'update')->whereNumber('goal');
+        Route::delete('/savings-goals/{goal}', 'destroy')->whereNumber('goal');
+        Route::post('/savings-goals/{goal}/contributions', 'contribute')->whereNumber('goal');
+        Route::delete('/savings-goals/{goal}/contributions/{resource}', 'removeContribution')->whereNumber(['goal', 'resource']);
     });
 
     Route::get('/cases', [CaseController::class, 'index']);

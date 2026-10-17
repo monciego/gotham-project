@@ -19,6 +19,8 @@ class Achievements
     /** @var array<string, int> stats already computed during this check */
     private array $stats = [];
 
+    public function __construct(private Finance $finance) {}
+
     /**
      * @return Collection<int, Achievement> trophies earned by this check
      */
@@ -93,6 +95,8 @@ class Achievements
             'intel_with_gratitude' => $user->intel()->whereNotNull('gratitude')->where('gratitude', '!=', '')->count(),
             'intel_streak' => $this->longestRun($user->intel()->orderBy('date')->pluck('date')),
             'resources_logged' => $user->resources()->count(),
+            'days_with_resources' => $user->resources()->distinct()->count('date'),
+            'months_within_budget' => $this->finance->monthsWithinBudget($user),
             'alfred_actions_taken' => $user->alfredMessages()->where('action_taken', true)->count(),
             'onboarding_completed' => (int) $user->onboarding_completed,
             'level_reached' => $user->current_level,

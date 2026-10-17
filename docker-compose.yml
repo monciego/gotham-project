@@ -17,6 +17,20 @@ services:
       redis:
         condition: service_healthy
 
+  # Laravel's scheduler (daily recurring transactions). Shares the api code;
+  # on first boot it waits for the api container to install dependencies.
+  scheduler:
+    build:
+      context: ./apps/api
+      args:
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+    entrypoint: ["sh", "-c", "until [ -f vendor/autoload.php ] && [ -f .env ]; do sleep 2; done; exec php artisan schedule:work"]
+    volumes:
+      - ./apps/api:/app
+    depends_on:
+      - api
+
   web:
     build:
       context: ./apps/web

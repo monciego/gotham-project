@@ -8,18 +8,21 @@ use App\Models\ArsenalLog;
 use App\Models\FocusSession;
 use App\Models\Intel;
 use App\Models\Mission;
+use App\Models\Resource;
 use App\Models\User;
 use App\Services\ArsenalStreaks;
 use App\Services\IntelSentiment;
+use App\Services\RecurringResources;
 use Illuminate\Database\Seeder;
 
 /**
  * Sample data for the local test user, so HQ has something to show.
- * Re-running it resets that user: XP, trophies, missions, habits, focus sessions, Intel and messages.
+ * Re-running it resets that user: XP, trophies, missions, habits, focus sessions, Intel,
+ * Resources (transactions, budgets, savings goals) and messages.
  */
 class DemoSeeder extends Seeder
 {
-    public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment): void
+    public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment, RecurringResources $recurring): void
     {
         $user = User::where('email', 'test@example.com')->firstOrFail();
         $user->update(['name' => 'Bruce Wayne']);
@@ -31,6 +34,9 @@ class DemoSeeder extends Seeder
         $user->focusSessions()->delete();
         $user->alfredMessages()->delete();
         $user->intel()->delete();
+        $user->resources()->delete();
+        $user->budgets()->delete();
+        $user->savingsGoals()->delete();
 
         $today = $user->today();
 
@@ -133,6 +139,64 @@ class DemoSeeder extends Seeder
                 'sentiment' => $score['score'],
                 'sentiment_label' => $score['label'],
             ]);
+        }
+
+        // Resources: four months of history. Salary and rent recur, so their copies come from the recurring service.
+        $thisMonth = $today->startOfMonth();
+        foreach ([
+            ['income', 6000, 'Salary', 'Wayne Enterprises', 'Checking'],
+            ['expense', 1800, 'Housing', 'Penthouse upkeep', 'Checking'],
+            ['expense', 15.99, 'Subscriptions', 'Gotham Gazette', 'Visa'],
+        ] as [$type, $amount, $category, $description, $account]) {
+            $recurring->generate($user->resources()->create([
+                'type' => $type, 'amount' => $amount, 'category' => $category, 'description' => $description,
+                'account' => $account, 'date' => $thisMonth->subMonths(3)->toDateString(),
+                'recurring' => true, 'recurring_frequency' => 'monthly',
+            ]));
+        }
+
+        // [day of month, category, amount, description] repeated each month, scaled a little per month.
+        $spending = [
+            [3, 'Food', 142.30, 'Groceries'], [9, 'Food', 96.40, 'Dinner with Selina'], [14, 'Food', 188.75, 'Groceries'],
+            [5, 'Transport', 60, 'Fuel'], [12, 'Transport', 45.50, 'Train pass'],
+            [7, 'Utilities', 180.20, 'Electricity'], [10, 'Entertainment', 85, 'Opera tickets'],
+            [11, 'Shopping', 210, 'New suit'], [15, 'Health', 40, 'Pharmacy'],
+        ];
+        foreach (range(3, 0) as $monthsAgo) {
+            $month = $thisMonth->subMonths($monthsAgo);
+            foreach ($spending as [$day, $category, $amount, $description]) {
+                $date = $month->addDays($day - 1);
+                if ($date->gt($today)) {
+                    continue;
+                }
+                $user->resources()->create([
+                    'type' => 'expense', 'amount' => round($amount * (1 + $monthsAgo * 0.05), 2), 'category' => $category,
+                    'description' => $description, 'date' => $date->toDateString(), 'account' => 'Visa',
+                ]);
+            }
+        }
+        $user->resources()->create(['type' => 'income', 'amount' => 750, 'category' => 'Freelance', 'description' => 'Consulting for Lucius', 'date' => $today->subDays(4)->toDateString(), 'account' => 'Checking']);
+
+        foreach (['Food' => 450, 'Transport' => 150, 'Entertainment' => 150, 'Shopping' => 200, 'Subscriptions' => 30, 'Utilities' => 250] as $category => $limit) {
+            $user->budgets()->create(['category' => $category, 'monthly_limit' => $limit, 'month' => $thisMonth->toDateString()]);
+        }
+
+        foreach ([
+            ['Batmobile tyres', 5000, $today->addDays(90), [800, 700]],
+            ['Emergency fund', 10000, null, [2000, 1000]],
+            ['Watchtower telescope', 800, null, [500, 300]],
+        ] as [$name, $target, $deadline, $contributions]) {
+            $goal = $user->savingsGoals()->create(['name' => $name, 'target_amount' => $target, 'deadline' => $deadline?->toDateString()]);
+            $goal->forceFill(['created_at' => $today->subDays(30)->utc()])->save();
+            foreach ($contributions as $index => $amount) {
+                $contribution = $user->resources()->make([
+                    'type' => 'expense', 'amount' => $amount, 'category' => Resource::SAVINGS_CATEGORY,
+                    'description' => "Toward {$name}", 'date' => $today->subDays(20 - $index * 10)->toDateString(), 'account' => 'Savings',
+                ]);
+                $contribution->savings_goal_id = $goal->id;
+                $contribution->save();
+            }
+            $goal->recalculate();
         }
 
         AlfredMessage::factory()->for($user)->create([
