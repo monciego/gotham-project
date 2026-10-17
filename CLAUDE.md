@@ -86,7 +86,8 @@ Each feature is built as a vertical slice:
 
 Web conventions:
 - Routes use the Batman names (`/hq`, `/missions`, …), listed once in `lib/nav.ts` (sidebar and header titles) and `lib/routes.ts` (protection). `app/(gotham)/[section]/page.tsx` is a placeholder for any section without a real page; adding `app/(gotham)/<section>/page.tsx` replaces it.
-- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts) and `lib/mission-queries.ts` (missions). Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
+- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions) and `lib/focus-queries.ts` (focus sessions). Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
+- The focus screen is `/focus/[sessionId]` in the `(focus)` route group: full screen, with no sidebar, header or Alfred toasts. `QuickStartButton` starts a session and opens it. `stores/focus.ts` holds the running countdown and distraction count, persisted to localStorage.
 - `useAlfredStore().say()` (`stores/alfred.ts`) shows Alfred's panel from anywhere; `AlfredHost` in the `(gotham)` layout renders it. On HQ, a critical alert takes the panel only while no toast is showing.
 - Loading states are skeletons (`@gotham/ui/components/ui/skeleton`), not spinners. Spinners are only for buttons that submit.
 - Animation uses `motion` (Framer Motion's current package; import from `motion/react`). `Providers` sets `reducedMotion="user"`.
@@ -106,10 +107,12 @@ API conventions:
   - Missions award 100/75/50/25 XP by priority (`Mission::XP`), once per mission (tracked in `xp_awarded`).
   - 1,000 XP per level (`User::gainXp()`).
   - `App\Services\Achievements::check()` awards every trophy whose `criteria` is now met, with its XP and an Alfred message. Criteria types it doesn't compute yet are skipped.
-- Focus sessions:
-  - Only one runs per user; starting another ends the previous one.
-  - `FocusSession::finish()` records time up to the planned length on the session and the mission.
-  - Completing or abandoning a mission ends its running session.
+- Focus sessions (`App\Services\FocusSessions`):
+  - Only one runs per user; starting another abandons the previous one. A mission is optional.
+  - The timer runs in the browser. `FocusSession::finish()` records whole minutes since the start, up to the planned length.
+  - Completing awards 5 XP per full 25 minutes (`xp_awarded` on the session) and posts an Alfred message.
+  - A mission's `actual_minutes` is the sum of its completed sessions.
+  - Completing a mission completes its running session; abandoning a mission abandons it.
 - Moving a mission's `due_date` later increments `times_postponed`; at 3, Alfred posts a "break it down" alert.
 - `DemoSeeder` (run by `db:seed` in the local environment) gives `test@example.com` / `password` a full HQ. Re-running it resets that user's data.
 

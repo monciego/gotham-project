@@ -8,6 +8,7 @@ export const AUTH_PAGES = ["/login", "/register"];
 const PROTECTED_PREFIXES = [
   "/hq",
   "/missions",
+  "/focus",
   "/arsenal",
   "/intel",
   "/resources",

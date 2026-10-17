@@ -24,13 +24,12 @@ import { AbandonDialog } from "./abandon-dialog";
 import { BreakdownDialog } from "./breakdown-dialog";
 import { DependenciesSection } from "./dependencies-section";
 import { FocusHistory } from "./focus-history";
-import { FocusTimer } from "./focus-timer";
 import { MissionNotFound } from "./mission-not-found";
 import { MissionDetailSkeleton } from "./mission-skeletons";
 import { NotesEditor } from "./notes-editor";
 import { PriorityBadge } from "./priority-badge";
 import { ScheduleDialog } from "./schedule-dialog";
-import { StartSessionButton } from "./start-session-button";
+import { QuickStartButton } from "@/components/focus/quick-start-button";
 import { StatusBadge } from "./status-badge";
 import { SubtaskList } from "./subtask-list";
 
@@ -127,7 +126,18 @@ export function MissionDetailView({ id, openBreakdown }: { id: number; openBreak
         </p>
       )}
 
-      {open && mission.active_session && <FocusTimer missionId={mission.id} session={mission.active_session} />}
+      {open && mission.active_session && (
+        <Link
+          href={`/focus/${mission.active_session.id}`}
+          className="flex items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4 transition-colors duration-200 hover:bg-primary/10"
+        >
+          <span className="flex items-center gap-2 font-medium">
+            <Timer className="size-4 text-primary" aria-hidden />
+            A focus session is running on this mission.
+          </span>
+          <span className="font-mono text-xs tracking-[0.2em] text-primary">RETURN TO FOCUS</span>
+        </Link>
+      )}
 
       <section className="rounded-xl border border-border bg-card p-5">
         <h3 className="font-mono text-xs font-semibold tracking-[0.2em] text-muted-foreground">WHY THIS MATTERS</h3>
@@ -138,9 +148,7 @@ export function MissionDetailView({ id, openBreakdown }: { id: number; openBreak
         {open ? (
           <>
             {!mission.active_session && (
-              <StartSessionButton missionId={mission.id} variant="default" size="lg">
-                Start 25-min Session
-              </StartSessionButton>
+              <QuickStartButton missionId={mission.id} variant="default" size="lg" />
             )}
             <Button variant="outline" size="lg" onClick={() => setDialog("breakdown")}>
               <ListTree aria-hidden />

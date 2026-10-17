@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogTitle } from "@gotham/ui/components/ui/dia
 import { cn } from "@gotham/ui/lib/utils";
 import { Timer } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { say } from "@/lib/alfred";
-import { useStartSession } from "@/lib/mission-queries";
+import { useStartFocusSession } from "@/lib/focus-queries";
 import type { MissionDetail } from "@/lib/types";
 
 /**
@@ -31,7 +32,9 @@ type BreakdownDialogProps = {
 
 export function BreakdownDialog({ mission, open, onOpenChange }: BreakdownDialogProps) {
   const [step, setStep] = useState(0);
-  const start = useStartSession();
+  const router = useRouter();
+  const start = useStartFocusSession();
+  const [navigating, startTransition] = useTransition();
   const steps = stepsFor(mission);
   const finished = step >= steps.length;
 
@@ -75,13 +78,17 @@ export function BreakdownDialog({ mission, open, onOpenChange }: BreakdownDialog
             <Button
               size="lg"
               className="h-12 w-full font-mono tracking-[0.2em]"
-              disabled={start.isPending}
+              disabled={start.isPending || navigating}
               onClick={() =>
-                start.mutate({ missionId: mission.id }, { onSuccess: () => onOpenChange(false) })
+                start.mutate(
+                  { missionId: mission.id },
+                  { onSuccess: (session) => startTransition(() => router.push(`/focus/${session.id}`)) },
+                )
               }
             >
               YES, START NOW
             </Button>
+            {start.isError && <p className="text-xs text-destructive">{start.error.message}</p>}
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
               Not yet
             </Button>

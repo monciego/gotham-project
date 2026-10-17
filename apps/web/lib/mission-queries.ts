@@ -17,7 +17,6 @@ import type {
   ApiEnvelope,
   CaseSummary,
   EarnedTrophy,
-  FocusSession,
   Mission,
   MissionCompletion,
   MissionDetail,
@@ -371,59 +370,6 @@ export function useRemoveDependency(missionId: number) {
     }),
     onError: (_error, _id, context) => context?.rollback?.(),
     onSettled: () => queryClient.invalidateQueries({ queryKey: missionKeys.all }),
-  });
-}
-
-/* Focus sessions ---------------------------------------------------------- */
-
-export function useStartSession() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ missionId, minutes = 25 }: { missionId: number; minutes?: number }) => {
-      const { data } = await api.post<ApiEnvelope<FocusSession>>(`/missions/${missionId}/focus-sessions`, {
-        duration_minutes: minutes,
-      });
-      return data.data;
-    },
-    onSuccess: (session, { missionId }) => {
-      patchMission(queryClient, missionId, { status: "in_progress", active_session: session });
-      useAlfredStore.getState().say({
-        mood: "encouraging",
-        title: say("sessionStarted", 0),
-        message: say("sessionStartedDetail", 0),
-      });
-    },
-    onSettled: () => refreshAfterChange(queryClient),
-  });
-}
-
-export function useEndSession(missionId: number) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (input: { sessionId: number; completed: boolean; energy_after?: number | null }) => {
-      const { sessionId, ...body } = input;
-      const { data } = await api.post<
-        ApiEnvelope<{ session: FocusSession; achievements: EarnedTrophy[] }>
-      >(`/focus-sessions/${sessionId}/end`, body);
-      return data.data;
-    },
-    onSuccess: ({ achievements }, { completed }) => {
-      patchMission(queryClient, missionId, { active_session: null });
-      if (achievements.length) {
-        void celebrate();
-      }
-      useAlfredStore.getState().say({
-        mood: completed ? "proud" : "encouraging",
-        title: achievements.length
-          ? `Trophy earned: ${achievements.map((trophy) => trophy.name).join(", ")}`
-          : say(completed ? "sessionDone" : "sessionStopped", 0),
-        message: say(completed ? "sessionDoneDetail" : "sessionStoppedDetail", 0),
-      });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.me });
-    },
-    onSettled: () => refreshAfterChange(queryClient),
   });
 }
 

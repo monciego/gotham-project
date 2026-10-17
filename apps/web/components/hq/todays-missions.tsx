@@ -3,7 +3,7 @@ import Link from "next/link";
 import { say } from "@/lib/alfred";
 import type { Mission } from "@/lib/types";
 import { PriorityBadge } from "@/components/missions/priority-badge";
-import { StartSessionButton } from "@/components/missions/start-session-button";
+import { QuickStartButton } from "@/components/focus/quick-start-button";
 import { SectionCard } from "@/components/section-card";
 
 export function TodaysMissions({ missions }: { missions: Mission[] }) {
@@ -34,7 +34,7 @@ export function TodaysMissions({ missions }: { missions: Mission[] }) {
                   </p>
                 )}
               </div>
-              <StartSessionButton missionId={mission.id} compactLabel />
+              <QuickStartButton missionId={mission.id} compactLabel />
             </li>
           ))}
         </ul>

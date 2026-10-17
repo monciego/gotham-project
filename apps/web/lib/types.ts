@@ -67,9 +67,23 @@ export type FocusSession = {
   end_time: string | null;
   duration_minutes: number;
   completed: boolean;
+  distractions: number;
+  xp_awarded: number;
+  /** 1–10. */
   energy_before: number | null;
+  /** 1–10. */
   energy_after: number | null;
   notes: string | null;
+  mission?: Pick<Mission, "id" | "title" | "status"> | null;
+};
+
+export type FocusCompletion = {
+  session: FocusSession;
+  xp_awarded: number;
+  total_xp: number;
+  current_level: number;
+  level_up: boolean;
+  achievements: EarnedTrophy[];
 };
 
 export type MissionDetail = Mission & {

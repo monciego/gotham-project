@@ -8,7 +8,7 @@ import { say } from "@/lib/alfred";
 import type { Dashboard, HabitToday } from "@/lib/types";
 import { HabitCheck } from "./habit-check";
 import { PriorityBadge } from "@/components/missions/priority-badge";
-import { StartSessionButton } from "@/components/missions/start-session-button";
+import { QuickStartButton } from "@/components/focus/quick-start-button";
 
 type MorningBriefProps = {
   dashboard: Dashboard;
@@ -50,14 +50,14 @@ export function MorningBrief({ dashboard, onMilestone }: MorningBriefProps) {
                   Postponed {mission.times_postponed} {mission.times_postponed === 1 ? "time" : "times"}
                 </p>
               )}
-              <StartSessionButton
+              <QuickStartButton
                 missionId={mission.id}
                 variant="default"
                 size="lg"
                 className="mt-5 h-11 w-full font-mono tracking-[0.2em]"
               >
                 START YOUR DAY
-              </StartSessionButton>
+              </QuickStartButton>
             </>
           ) : (
             <p className="text-muted-foreground">{say("noMission", 0)}</p>

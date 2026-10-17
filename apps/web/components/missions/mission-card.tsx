@@ -4,7 +4,7 @@ import Link from "next/link";
 import { formatDueDate } from "@/lib/format";
 import type { Mission } from "@/lib/types";
 import { PriorityBadge } from "./priority-badge";
-import { StartSessionButton } from "./start-session-button";
+import { QuickStartButton } from "@/components/focus/quick-start-button";
 import { StatusBadge } from "./status-badge";
 
 type MissionCardProps = {
@@ -68,7 +68,7 @@ export function MissionCard({ mission, compact, leading }: MissionCardProps) {
       {!compact && (
         <div className="relative z-10 flex shrink-0 flex-col items-end gap-2">
           <StatusBadge status={mission.status} />
-          {open && <StartSessionButton missionId={mission.id} compactLabel />}
+          {open && <QuickStartButton missionId={mission.id} compactLabel />}
         </div>
       )}
     </article>
