@@ -12,7 +12,7 @@ export function FormAlert({ tone = "error", children }: FormAlertProps) {
       className={cn(
         "rounded-lg border px-3 py-2 text-sm",
         tone === "error"
-          ? "border-destructive/40 bg-destructive/10 text-red-300"
+          ? "border-destructive/40 bg-destructive/10 text-destructive dark:text-red-300"
           : "border-primary/40 bg-primary/10 text-primary",
       )}
     >

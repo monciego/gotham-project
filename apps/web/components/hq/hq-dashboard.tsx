@@ -3,7 +3,7 @@
 import { Button } from "@gotham/ui/components/ui/button";
 import { say } from "@/lib/alfred";
 import { celebrate } from "@/lib/celebrate";
-import { useDashboard } from "@/lib/queries";
+import { useDashboard, useMe } from "@/lib/queries";
 import type { HabitToday } from "@/lib/types";
 import { useAlfredStore } from "@/stores/alfred";
 import { HqSkeleton } from "./hq-skeleton";
@@ -17,6 +17,7 @@ const MILESTONE_LINES = { 7: "streak7", 30: "streak30", 100: "streak100" } as co
 export function HqDashboard() {
   const { data, isPending, isError, refetch } = useDashboard();
   const alfredSays = useAlfredStore((state) => state.say);
+  const showBrief = useMe().data?.notification_preferences.morning_brief ?? true;
 
   if (isPending) {
     return <HqSkeleton />;
@@ -46,7 +47,8 @@ export function HqDashboard() {
   // Alfred's messages show on every page (AlfredAlerts and AlfredHost in the layout).
   return (
     <div className="grid gap-6">
-      <MorningBrief dashboard={data} onMilestone={handleMilestone} />
+      {/* Settings → Notifications can switch the brief off. */}
+      {showBrief && <MorningBrief dashboard={data} onMilestone={handleMilestone} />}
       <StatCards stats={data.stats} />
 
       <div className="grid gap-6 lg:grid-cols-2">

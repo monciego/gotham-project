@@ -1,12 +1,21 @@
+import { redirect } from "next/navigation";
 import { AlfredAlerts } from "@/components/alfred/alfred-alerts";
+import { CommandHost } from "@/components/command/command-host";
 import { ProgressCelebration } from "@/components/cases/progress-celebration";
 import { RewardsHost } from "@/components/trophies/rewards-host";
 import { Providers } from "@/components/providers";
 import { AlfredHost } from "@/components/shell/alfred-host";
 import { Header } from "@/components/shell/header";
 import { Sidebar } from "@/components/shell/sidebar";
+import { ThemeSync } from "@/components/shell/theme-sync";
+import { getCurrentUser } from "@/lib/server-api";
 
-export default function GothamLayout({ children }: { children: React.ReactNode }) {
+export default async function GothamLayout({ children }: { children: React.ReactNode }) {
+  // New accounts set up with Alfred first.
+  if (!(await getCurrentUser()).onboarding_completed) {
+    redirect("/onboarding");
+  }
+
   return (
     <Providers>
       <Sidebar />
@@ -21,6 +30,8 @@ export default function GothamLayout({ children }: { children: React.ReactNode }
       <AlfredHost />
       <ProgressCelebration />
       <RewardsHost />
+      <CommandHost />
+      <ThemeSync />
     </Providers>
   );
 }

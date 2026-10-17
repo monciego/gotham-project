@@ -39,7 +39,7 @@ export function UserMenu({ user }: { user: User }) {
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="truncate">{user.email}</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => router.push("/profile")}>
+          <DropdownMenuItem onClick={() => router.push("/settings#profile")}>
             <UserRound aria-hidden />
             Profile
           </DropdownMenuItem>

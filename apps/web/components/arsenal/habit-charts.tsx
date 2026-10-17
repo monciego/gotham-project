@@ -5,14 +5,14 @@ import type { HabitAnalytics } from "@/lib/types";
 import { WEEKDAYS } from "./habit-meta";
 
 const GOLD = "#d4af37";
-const MUTED = "#9a9aa0";
-const GRID = "#2d2d30";
+const MUTED = "var(--muted-foreground)";
+const GRID = "var(--border)";
 
 const TOOLTIP = {
-  contentStyle: { background: "#1a1a1d", border: `1px solid ${GRID}`, borderRadius: 8, fontSize: 12 },
+  contentStyle: { background: "var(--popover)", border: `1px solid ${GRID}`, borderRadius: 8, fontSize: 12 },
   labelStyle: { color: MUTED },
-  itemStyle: { color: "#ededed" },
-  cursor: { fill: "rgba(255,255,255,0.04)", stroke: GRID },
+  itemStyle: { color: "var(--foreground)" },
+  cursor: { fill: "color-mix(in oklch, var(--foreground) 5%, transparent)", stroke: GRID },
 };
 
 const SHORT_DATE = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });

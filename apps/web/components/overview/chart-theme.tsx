@@ -1,13 +1,13 @@
-/** The Gotham chart theme: transparent background, dark grid, muted text, gold first. */
+/** The Gotham chart theme: transparent background, theme grid and muted text, gold first. */
 export const GOLD = "#d4af37";
-export const GRID = "#2d2d30";
-export const TEXT = "#a0a0a3";
+export const GRID = "var(--border)";
+export const TEXT = "var(--muted-foreground)";
 export const PURPLE = "#8b5cf6";
 export const BLUE = "#3b82f6";
 
 export const axis = { stroke: TEXT, fontSize: 11, tickLine: false, axisLine: false } as const;
 
-export const cursor = { fill: "rgba(255,255,255,0.04)", stroke: GRID };
+export const cursor = { fill: "color-mix(in oklch, var(--foreground) 5%, transparent)", stroke: GRID };
 
 const SHORT_DATE = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 

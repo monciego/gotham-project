@@ -11,7 +11,6 @@ import { Field } from "@/components/forms/field";
 import { FormAlert } from "@/components/forms/form-alert";
 import { SubmitButton } from "@/components/forms/submit-button";
 import { applyApiErrors } from "@/lib/form-errors";
-import { HOME } from "@/lib/routes";
 import { useAuthStore } from "@/stores/auth";
 
 const schema = z
@@ -66,7 +65,8 @@ export function RegisterForm({ timezones }: { timezones: string[] }) {
     setFormError(null);
     try {
       await registerUser(values);
-      router.replace(HOME);
+      // New accounts meet Alfred first.
+      router.replace("/onboarding");
       router.refresh();
     } catch (error) {
       setFormError(applyApiErrors(error, setError, FIELDS));

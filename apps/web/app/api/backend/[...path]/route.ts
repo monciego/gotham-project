@@ -56,6 +56,10 @@ async function forward(
     status: upstream.status,
     headers: {
       "Content-Type": upstream.headers.get("content-type") ?? "application/json",
+      // Downloads (exports) name their file.
+      ...(upstream.headers.has("content-disposition") && {
+        "Content-Disposition": upstream.headers.get("content-disposition")!,
+      }),
     },
   });
 

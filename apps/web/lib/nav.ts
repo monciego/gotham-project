@@ -28,7 +28,6 @@ export const NAV_ITEMS: NavItem[] = [
 
 /** Pages reached from the user menu rather than the sidebar. */
 const MENU_PAGES: Record<string, string> = {
-  "/profile": "Profile",
   "/settings": "Settings",
   "/alfred": "Alfred",
 };

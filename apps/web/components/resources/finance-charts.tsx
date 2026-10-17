@@ -4,18 +4,18 @@ import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveCo
 import { formatMoney, formatMoneyRound, formatMonth } from "@/lib/money";
 import type { ResourceSummary } from "@/lib/types";
 
-const MUTED = "#9a9aa0";
-const GRID = "#2d2d30";
+const MUTED = "var(--muted-foreground)";
+const GRID = "var(--border)";
 const INCOME = "#10b981";
 const EXPENSE = "#ef4444";
 /** Distinct enough on dark backgrounds, gold first. */
 const SLICES = ["#d4af37", "#3b82f6", "#10b981", "#f97316", "#a855f7", "#ec4899", "#14b8a6", "#eab308", "#6366f1", "#9a9aa0"];
 
 const TOOLTIP = {
-  contentStyle: { background: "#1a1a1d", border: `1px solid ${GRID}`, borderRadius: 8, fontSize: 12 },
+  contentStyle: { background: "var(--popover)", border: `1px solid ${GRID}`, borderRadius: 8, fontSize: 12 },
   labelStyle: { color: MUTED },
-  itemStyle: { color: "#ededed" },
-  cursor: { fill: "rgba(255,255,255,0.04)" },
+  itemStyle: { color: "var(--foreground)" },
+  cursor: { fill: "color-mix(in oklch, var(--foreground) 5%, transparent)" },
 };
 
 const axis = { stroke: MUTED, fontSize: 11, tickLine: false, axisLine: false } as const;

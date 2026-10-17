@@ -19,6 +19,7 @@ const PROTECTED_PREFIXES = [
   "/settings",
   "/profile",
   "/alfred",
+  "/onboarding",
 ];
 
 export function isProtected(pathname: string): boolean {

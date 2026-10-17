@@ -86,7 +86,7 @@ Each feature is built as a vertical slice:
 
 Web conventions:
 - Routes use the Batman names (`/hq`, `/missions`, …), listed once in `lib/nav.ts` (sidebar and header titles) and `lib/routes.ts` (protection). `app/(gotham)/[section]/page.tsx` is a placeholder for any section without a real page; adding `app/(gotham)/<section>/page.tsx` replaces it.
-- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits), `lib/intel-queries.ts` (journal) and `lib/resource-queries.ts` (finance; money and month helpers in `lib/money.ts`), `lib/operation-queries.ts` (calendar), `lib/case-queries.ts` (cases), `lib/overview-queries.ts` (analytics, insights, weekly reports) and `lib/trophy-queries.ts` (trophies, XP history) and `lib/alfred-queries.ts` (Alfred's messages and actions).
+- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits), `lib/intel-queries.ts` (journal) and `lib/resource-queries.ts` (finance; money and month helpers in `lib/money.ts`), `lib/operation-queries.ts` (calendar), `lib/case-queries.ts` (cases), `lib/overview-queries.ts` (analytics, insights, weekly reports) and `lib/trophy-queries.ts` (trophies, XP history) `lib/alfred-queries.ts` (Alfred's messages and actions), `lib/settings-queries.ts` (settings, mode, profile, export, onboarding) and `lib/search-queries.ts` (the command palette).
 - Shared form pieces live in `components/forms` (`Field`, `NativeSelect`, `TagInput`, `SubmitButton`, `FormAlert`). The Intel form keeps a local draft every 30 seconds (`components/intel/use-draft.ts`).
 - Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
 - The focus screen is `/focus/[sessionId]` in the `(focus)` route group: full screen, with no sidebar, header or Alfred toasts. `QuickStartButton` starts a session and opens it. `stores/focus.ts` holds the running countdown and distraction count, persisted to localStorage.
@@ -95,6 +95,10 @@ Web conventions:
   - `AlfredAlerts` shows unread non-critical messages as cards above the page, at most 3.
   - The header's `NotificationBell` lists the last five; `/alfred` lists the latest 50.
   - Messages are server state in `lib/alfred-queries.ts`, polled every 5 minutes. `useAlfredAction()` runs a message's action on the API and follows the result: navigate, show a toast, or open the "I'm stuck" `HelpDialog`.
+- New accounts go through `/onboarding` (the `(onboarding)` route group) before anything else: the `(gotham)` layout redirects there until `onboarding_completed`. Each step saves through the normal endpoints; `POST /onboarding/complete` finishes it.
+- Global overlays live in `CommandHost` (`(gotham)` layout), opened through `stores/command.ts`: the command palette (Ctrl/⌘ K), the shortcuts table (Ctrl/⌘ /), the focus-session picker (Ctrl/⌘ F) and the mode switcher (the mode pill). Shortcuts are listed once in `lib/shortcuts.ts`; Ctrl works on a Mac too, since macOS keeps ⌘H and ⌘M.
+- Life modes are described in `lib/modes.ts`. The mode's colour is the sidebar's accent.
+- PWA: `app/manifest.ts`, icons in `public/icons` (bat on black), and `public/sw.js`, registered only in production builds (`components/service-worker.tsx`). It caches static assets and shows `/offline` for pages; it never caches `/api`.
 - Loading states are skeletons (`@gotham/ui/components/ui/skeleton`), not spinners. Spinners are only for buttons that submit.
 - Animation uses `motion` (Framer Motion's current package; import from `motion/react`). `Providers` sets `reducedMotion="user"`.
 - When adding shadcn components, check that the generated files import `cn` from `@gotham/ui/lib/utils`. The CLI has produced `from "cn"` here and installed an unrelated npm package called `cn`.
@@ -118,6 +122,8 @@ API conventions:
   - Standard messages come from `App\Services\AlfredService::sendMessage($user, $type, $data)`. Each type fixes its words, priority, mood and actions, and gets `type` and `subject_id` columns so detectors say it once a day per mission or habit (`sentToday()`).
   - Receipts (session_complete, case_closed, achievement_unlocked, level-ups, milestones, goals reached) are saved already read: the user just saw them on screen.
   - `AlfredRoundsJob` runs hourly by each user's local clock: procrastination from 08:00 to 21:59 (`no_start` after 10am unless in Rest mode, `task_avoidance` for missions postponed 3+ times), `streak_danger` at 20:00 (only for streaks that today's miss would actually end, grace counted), and burnout, energy patterns and insights at 23:00. Detection lives in `AlfredIntelligence`.
+- Settings (`SettingsController`): `notification_preferences` always comes back complete (`User::NOTIFICATION_DEFAULTS`); the switches silence Alfred's message types (`AlfredService::PREFERENCES`), quiet hours skip the rounds' warnings, and `alfred_aggressiveness` sets the no-start hour and avoidance count (`config/gotham.php`, `AlfredService::threshold()`). Habit reminders and mission deadlines are stored only: nothing pushes notifications yet. Mode changes go through `App\Services\Modes`, which logs them in `system_intelligence` (`mode_history`). `GET /settings/export` is a ZIP of JSON files (`App\Services\DataExport`).
+- Search (`GET /search?q=`, `SearchController`): case-insensitive LIKE over missions, arsenal, intel (text and tags, not markup), cases and operations; 5 per group, title matches first.
 - XP:
   - Missions award 100/75/50/25 XP by priority (`Mission::XP`), once per mission (tracked in `xp_awarded`).
   - 1,000 XP per level. Every change goes through `App\Services\Xp::award($user, $amount, $reason, $label)`, which updates the user, writes `xp_events` (the XP history) and posts Alfred's level-up message. Don't call `User::gainXp()` directly.
@@ -173,7 +179,7 @@ All user-facing Alfred messages live in one module (`apps/web/lib/alfred.ts`), k
 
 ## Design system
 
-- Dark only. Tokens are defined in `packages/ui/src/styles/theme.css`:
+- Dark by default. Tokens are defined in `packages/ui/src/styles/theme.css`; a light theme overrides them under `:root.light`. The user's `theme` setting swaps the `dark` class for `light` on `<html>` (`lib/theme.ts`; a head script applies the last one before paint). Use tokens, not fixed colours, so both themes work:
 
   | Role | Color |
   |---|---|

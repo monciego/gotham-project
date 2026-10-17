@@ -15,10 +15,13 @@ type RewardsState = {
   xpToast: { key: string; amount: number } | null;
   /** While true (the focus screen), rewards aren't shown: that screen has its own summary. */
   suppressed: boolean;
+  /** The user switched trophy notifications off: no unlock modals, just the XP toast. */
+  hideTrophies: boolean;
   receive: (rewards: Rewards) => void;
   next: () => void;
   clearXpToast: () => void;
   setSuppressed: (suppressed: boolean) => void;
+  setHideTrophies: (hide: boolean) => void;
 };
 
 let sequence = 0;
@@ -28,11 +31,13 @@ export const useRewardsStore = create<RewardsState>()((set, get) => ({
   queue: [],
   xpToast: null,
   suppressed: false,
+  hideTrophies: false,
   receive: (rewards) => {
     if (get().suppressed) return;
 
+    const trophies = get().hideTrophies ? [] : rewards.trophies;
     const celebrations: Celebration[] = [
-      ...rewards.trophies.map((trophy): Celebration => ({ kind: "trophy", key: nextKey(), trophy })),
+      ...trophies.map((trophy): Celebration => ({ kind: "trophy", key: nextKey(), trophy })),
       ...(rewards.level_up ? [{ kind: "level", key: nextKey(), level: rewards.level_up.to } as const] : []),
     ];
 
@@ -45,4 +50,5 @@ export const useRewardsStore = create<RewardsState>()((set, get) => ({
   next: () => set((state) => ({ queue: state.queue.slice(1) })),
   clearXpToast: () => set({ xpToast: null }),
   setSuppressed: (suppressed) => set({ suppressed }),
+  setHideTrophies: (hideTrophies) => set({ hideTrophies }),
 }));

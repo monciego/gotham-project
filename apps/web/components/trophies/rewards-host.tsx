@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { trophyKeys } from "@/lib/trophy-queries";
-import { queryKeys } from "@/lib/queries";
+import { queryKeys, useMe } from "@/lib/queries";
 import { useRewardsStore } from "@/stores/rewards";
 import { RewardModals } from "./reward-modals";
 import { XpToast } from "./xp-toast";
@@ -18,6 +18,11 @@ export function RewardsHost() {
   const queue = useRewardsStore((state) => state.queue);
   const next = useRewardsStore((state) => state.next);
   const xpToast = useRewardsStore((state) => state.xpToast);
+  const setHideTrophies = useRewardsStore((state) => state.setHideTrophies);
+  const showTrophies = useMe().data?.notification_preferences.achievement_unlocks ?? true;
+
+  // Settings → Notifications → Achievement unlocks.
+  useEffect(() => setHideTrophies(!showTrophies), [showTrophies, setHideTrophies]);
 
   // New XP or trophies: the header's level and the trophy case are stale.
   useEffect(() => {

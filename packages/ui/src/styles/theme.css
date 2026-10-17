@@ -2,7 +2,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Gotham is dark only. Apps put class="dark" on <html> so shadcn's dark: variants apply too. */
+/*
+ * Gotham is dark by default. Apps put class="dark" on <html> so shadcn's dark:
+ * variants apply too, and swap it for class="light" when the user picks the
+ * light theme (the overrides below).
+ */
 :root {
   --radius: 0.625rem;
   --background: #0a0a0a;
@@ -40,6 +44,36 @@
   --priority-high: #f97316;
   --priority-medium: #3b82f6;
   --priority-low: #6b7280;
+}
+
+:root.light {
+  --background: #f5f4f0;
+  --foreground: #141416;
+  --card: #ffffff;
+  --card-foreground: #141416;
+  --popover: #ffffff;
+  --popover-foreground: #141416;
+  /* A deeper gold, so it still reads on white. */
+  --primary: #a8841c;
+  --primary-foreground: #ffffff;
+  --secondary: #ebe9e3;
+  --secondary-foreground: #141416;
+  --muted: #ebe9e3;
+  --muted-foreground: #5f5f66;
+  --accent: #ebe9e3;
+  --accent-foreground: #141416;
+  --border: #dcdad3;
+  --input: #d2d0c8;
+  --ring: #a8841c;
+  --chart-1: #a8841c;
+  --sidebar: #fbfaf7;
+  --sidebar-foreground: #141416;
+  --sidebar-primary: #a8841c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #efede7;
+  --sidebar-accent-foreground: #141416;
+  --sidebar-border: #dcdad3;
+  --sidebar-ring: #a8841c;
 }
 
 @theme inline {

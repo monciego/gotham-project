@@ -5,6 +5,7 @@ import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { say } from "@/lib/alfred";
+import { MODES } from "@/lib/modes";
 import type { Dashboard, HabitToday } from "@/lib/types";
 import { HabitCheck } from "./habit-check";
 import { PriorityBadge } from "@/components/missions/priority-badge";
@@ -16,7 +17,7 @@ type MorningBriefProps = {
 };
 
 export function MorningBrief({ dashboard, onMilestone }: MorningBriefProps) {
-  const { greeting, mission, quote } = dashboard.morning_brief;
+  const { greeting, mission, quote, mode, mode_line } = dashboard.morning_brief;
 
   // The API lists unfinished habits, so a refetch would drop the one just checked.
   // Keep the first three for this visit and read their live state from today's arsenal.
@@ -29,6 +30,10 @@ export function MorningBrief({ dashboard, onMilestone }: MorningBriefProps) {
     <BracketCard className="p-6 md:p-8">
       <p className="font-mono text-xs tracking-[0.3em] text-primary">MORNING BRIEF</p>
       <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">{greeting}</h2>
+      <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+        <span aria-hidden className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: MODES[mode].color }} />
+        {mode_line}
+      </p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_18rem]">
         <div>
@@ -60,7 +65,7 @@ export function MorningBrief({ dashboard, onMilestone }: MorningBriefProps) {
               </QuickStartButton>
             </>
           ) : (
-            <p className="text-muted-foreground">{say("noMission", 0)}</p>
+            <p className="text-muted-foreground">{say(mode === "rest" ? "restBrief" : "noMission", 0)}</p>
           )}
         </div>
 

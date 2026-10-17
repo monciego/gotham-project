@@ -42,7 +42,7 @@ function toEvent(entry: CalendarEntry): EventInput {
   };
 }
 
-export function OperationsCalendar() {
+export function OperationsCalendar({ initialDate }: { initialDate?: string }) {
   const calendar = useRef<FullCalendar>(null);
   const [range, setRange] = useState<CalendarRange | null>(null);
   const [view, setView] = useState("dayGridMonth");
@@ -145,6 +145,7 @@ export function OperationsCalendar() {
           ref={calendar}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView="dayGridMonth"
+          initialDate={initialDate}
           headerToolbar={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek" }}
           buttonText={{ today: "Today", month: "Month", week: "Week", day: "Day", list: "Agenda" }}
           events={entries?.map(toEvent) ?? []}

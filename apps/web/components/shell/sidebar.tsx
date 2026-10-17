@@ -4,6 +4,7 @@ import { Skeleton } from "@gotham/ui/components/ui/skeleton";
 import { cn } from "@gotham/ui/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { MODES } from "@/lib/modes";
 import { isActive, NAV_ITEMS } from "@/lib/nav";
 import { useMe } from "@/lib/queries";
 import { ModePill } from "./mode-pill";
@@ -12,10 +13,15 @@ import { UserAvatar } from "./user-avatar";
 export function Sidebar() {
   const pathname = usePathname();
   const { data: user } = useMe();
+  // The life mode's colour is the sidebar's accent; gold until the user loads.
+  const accent = user ? MODES[user.current_mode].color : "var(--primary)";
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 flex w-16 flex-col border-r border-sidebar-border bg-sidebar md:w-64">
-      <div className="flex h-16 items-center justify-center gap-2 border-b border-sidebar-border md:justify-start md:px-5">
+    <aside
+      style={{ "--mode": accent } as React.CSSProperties}
+      className="fixed inset-y-0 left-0 z-30 flex w-16 flex-col border-r border-sidebar-border bg-sidebar md:w-64"
+    >
+      <div className="flex h-16 items-center justify-center gap-2 border-b border-sidebar-border shadow-[inset_0_2px_0_var(--mode)] transition-shadow duration-300 md:justify-start md:px-5">
         <span aria-hidden className="text-lg">
           🦇
         </span>
@@ -35,13 +41,13 @@ export function Sidebar() {
                   title={label}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-10 items-center justify-center gap-3 rounded-lg text-sm transition-colors duration-200 md:justify-start md:px-3",
+                    "flex h-10 items-center justify-center gap-3 rounded-lg text-sm transition-colors duration-300 md:justify-start md:px-3",
                     active
-                      ? "bg-primary font-medium text-primary-foreground"
+                      ? "bg-[color-mix(in_oklch,var(--mode)_16%,transparent)] font-medium text-foreground shadow-[inset_3px_0_0_var(--mode)]"
                       : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
                   )}
                 >
-                  <Icon className="size-4 shrink-0" aria-hidden />
+                  <Icon className={cn("size-4 shrink-0 transition-colors duration-300", active && "text-(--mode)")} aria-hidden />
                   <span className="sr-only md:not-sr-only">{label}</span>
                 </Link>
               </li>

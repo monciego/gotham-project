@@ -18,13 +18,64 @@ export type User = {
   current_mode: "batman" | "wayne" | "bruce" | "playboy" | "rest";
   total_xp: number;
   current_level: number;
-  notification_preferences: Record<string, unknown> | null;
+  notification_preferences: NotificationPreferences;
+  /** "HH:MM", or null when not set. */
   work_start_time: string | null;
   work_end_time: string | null;
-  alfred_aggressiveness: "mild" | "normal" | "intense";
+  alfred_aggressiveness: Aggressiveness;
+  theme: Theme;
   onboarding_completed: boolean;
   daily_focus_goal_minutes: number;
   created_at: string;
+};
+
+export type Aggressiveness = "mild" | "normal" | "intense";
+
+export type Theme = "dark" | "light";
+
+/** Every switch is present (the API fills in defaults). Quiet hours are "HH:MM" or null. */
+export type NotificationPreferences = {
+  morning_brief: boolean;
+  habit_reminders: boolean;
+  mission_deadlines: boolean;
+  alfred_alerts: boolean;
+  streak_warnings: boolean;
+  achievement_unlocks: boolean;
+  quiet_hours_start: string | null;
+  quiet_hours_end: string | null;
+};
+
+export type NotificationSwitch = Exclude<keyof NotificationPreferences, "quiet_hours_start" | "quiet_hours_end">;
+
+/** GET/PUT /settings. */
+export type Settings = Pick<
+  User,
+  "current_mode" | "notification_preferences" | "work_start_time" | "work_end_time" | "alfred_aggressiveness" | "theme"
+>;
+
+export type SettingsInput = Partial<Omit<Settings, "current_mode" | "notification_preferences">> & {
+  notification_preferences?: Partial<NotificationPreferences>;
+};
+
+export type ModeSwitch = { user: User; announcement: { title: string; message: string } };
+
+export type SearchResultType = "mission" | "arsenal" | "intel" | "case" | "operation";
+
+export type SearchResult = {
+  id: number;
+  type: SearchResultType;
+  title: string;
+  snippet: string | null;
+  route: string;
+  meta: string | null;
+};
+
+export type SearchGroup = "missions" | "arsenal" | "intel" | "cases" | "operations";
+
+export type SearchResponse = {
+  query: string;
+  results: Record<SearchGroup, SearchResult[]>;
+  total: number;
 };
 
 export type Priority = "critical" | "high" | "medium" | "low";
@@ -372,6 +423,10 @@ export type AlfredMessage = {
 export type Dashboard = {
   morning_brief: {
     greeting: string;
+    mode: Mode;
+    /** Alfred's word on the day for the current mode. */
+    mode_line: string;
+    /** Null in Rest mode, or when nothing is due. */
     mission: Mission | null;
     habits: HabitToday[];
     quote: { text: string; author: string };
