@@ -86,7 +86,7 @@ Each feature is built as a vertical slice:
 
 Web conventions:
 - Routes use the Batman names (`/hq`, `/missions`, …), listed once in `lib/nav.ts` (sidebar and header titles) and `lib/routes.ts` (protection). `app/(gotham)/[section]/page.tsx` is a placeholder for any section without a real page; adding `app/(gotham)/<section>/page.tsx` replaces it.
-- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits), `lib/intel-queries.ts` (journal) and `lib/resource-queries.ts` (finance; money and month helpers in `lib/money.ts`), `lib/operation-queries.ts` (calendar), `lib/case-queries.ts` (cases) and `lib/overview-queries.ts` (analytics, insights, weekly reports).
+- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits), `lib/intel-queries.ts` (journal) and `lib/resource-queries.ts` (finance; money and month helpers in `lib/money.ts`), `lib/operation-queries.ts` (calendar), `lib/case-queries.ts` (cases), `lib/overview-queries.ts` (analytics, insights, weekly reports) and `lib/trophy-queries.ts` (trophies, XP history).
 - Shared form pieces live in `components/forms` (`Field`, `NativeSelect`, `TagInput`, `SubmitButton`, `FormAlert`). The Intel form keeps a local draft every 30 seconds (`components/intel/use-draft.ts`).
 - `StreakGuard` (in the `(gotham)` layout) asks after 8pm, on each navigation, before a streak marked `streak_at_risk` is lost. Dismissals are remembered per day in localStorage. Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
 - The focus screen is `/focus/[sessionId]` in the `(focus)` route group: full screen, with no sidebar, header or Alfred toasts. `QuickStartButton` starts a session and opens it. `stores/focus.ts` holds the running countdown and distraction count, persisted to localStorage.
@@ -101,7 +101,7 @@ API conventions:
 - Model names that differ from their table: `CaseFile` → `cases` (`case` is reserved in PHP), `Arsenal` → `arsenal`, `Intel` → `intel`, `SystemIntelligence` → `system_intelligence`. `UserAchievement` is the `user_achievements` pivot.
 - Models use `#[Fillable]`/`#[Table]` attributes and classic `scopeX()` methods. Don't use `#[Scope]`: several scopes share a column name (`active`, `completed`), and Laravel can then mistake the method for a relationship.
 - Enum columns are plain strings. The allowed values are in the migrations.
-- Trophy definitions live in `AchievementsSeeder`. It matches rows on `key`, so it is safe to re-run.
+- Trophy definitions live in `AchievementsSeeder`. It matches rows on `key`, so it is safe to re-run. `icon` is a Lucide name mapped in `components/trophies/trophy-icons.ts`; add new names there.
 - "Today" always means the user's day: use `$user->today()` (a `CarbonImmutable` at midnight in their timezone) and `whereDate()` on date columns. Plain `where('date', …)` breaks on SQLite, which the tests use.
 - Arsenal (habits):
   - Habit schedules (`arsenal.frequency`) are documented on the `Arsenal` model.
@@ -112,8 +112,10 @@ API conventions:
 - Alfred message `actions` are `[{label, href}]`.
 - XP:
   - Missions award 100/75/50/25 XP by priority (`Mission::XP`), once per mission (tracked in `xp_awarded`).
-  - 1,000 XP per level (`User::gainXp()`).
-  - `App\Services\Achievements::check()` awards every trophy whose `criteria` is now met, with its XP and an Alfred message. Criteria types it doesn't compute yet are skipped.
+  - 1,000 XP per level. Every change goes through `App\Services\Xp::award($user, $amount, $reason, $label)`, which updates the user, writes `xp_events` (the XP history) and posts Alfred's level-up message. Don't call `User::gainXp()` directly.
+  - Trophies: `App\Services\AchievementService::checkAndAward($user, $event)` after a qualifying action (`mission_complete`, `habit_complete`, `focus_complete`, `case_complete`, `milestone_complete`, `journal_save`, `resource_save`, `alfred_action`, `daily_login`). Each event checks only the criteria types it can move, plus levels. Criteria types are computed in `stat()`; `progress()` gives the trophy page's counts.
+  - `App\Support\Rewards` collects what a request earned (XP, a level change, trophies); `AttachRewards` adds it to successful JSON responses as `rewards`. The web's `api` client hands it to `stores/rewards.ts`, and `RewardsHost` (in the `(gotham)` layout) shows the trophy and level-up modals or a "+XP" toast. The focus screen suppresses them (`SuppressRewards`). So features don't announce trophies or levels themselves.
+  - `RecordDailyActivity` (on the authenticated route groups) notes each day the user opens the app (`user_activity_days`, for the login streak) and fires `daily_login`. Postponing a mission writes `mission_postponements`; acting on an Alfred message sets `acted_at` the first time.
 - Focus sessions (`App\Services\FocusSessions`):
   - Only one runs per user; starting another abandons the previous one. A mission is optional.
   - The timer runs in the browser. `FocusSession::finish()` records whole minutes since the start, up to the planned length.
@@ -155,7 +157,7 @@ API conventions:
   - Each new entry gives 5 XP (`xp_awarded`), taken back on delete. `GET /intel/prompt` gives a prompt for the day, and `GET /intel/insights` gives the numbers for the list page.
 - `DemoSeeder` (run by `db:seed` in the local environment) gives `test@example.com` / `password` a full HQ. Re-running it resets that user's data.
 
-Missions belong to Cases. HQ and Overview aggregate the other features. Streaks and trophies are computed on the API side, and trophies are awarded by queued jobs.
+Missions belong to Cases. HQ and Overview aggregate the other features. Streaks and trophies are computed on the API side, when the action happens.
 
 ## Alfred's copy
 

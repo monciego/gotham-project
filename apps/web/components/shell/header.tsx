@@ -7,8 +7,7 @@ import { useMe } from "@/lib/queries";
 import { ModePill } from "./mode-pill";
 import { NotificationBell } from "./notification-bell";
 import { UserMenu } from "./user-menu";
-
-const numberFormat = new Intl.NumberFormat("en-US");
+import { XpBadge } from "./xp-badge";
 
 export function Header() {
   const pathname = usePathname();
@@ -21,9 +20,7 @@ export function Header() {
       {user ? (
         <>
           <ModePill mode={user.current_mode} className="hidden sm:inline-flex" />
-          <span className="hidden rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-xs text-primary sm:inline">
-            Lv.{user.current_level} · {numberFormat.format(user.total_xp)} XP
-          </span>
+          <XpBadge user={user} />
           <NotificationBell />
           <UserMenu user={user} />
         </>

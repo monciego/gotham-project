@@ -80,3 +80,25 @@ body {
 .gotham-calendar .fc-list-day-cushion {
   color: var(--foreground);
 }
+
+/* Trophy and level-up modals: a slow gold glow while they show (a few seconds). */
+@keyframes trophy-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgb(212 175 55 / 0.35));
+  }
+  50% {
+    filter: drop-shadow(0 0 22px rgb(212 175 55 / 0.75));
+  }
+}
+
+.trophy-glow {
+  animation: trophy-glow 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trophy-glow {
+    animation: none;
+    filter: drop-shadow(0 0 12px rgb(212 175 55 / 0.5));
+  }
+}

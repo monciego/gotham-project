@@ -11,11 +11,10 @@ import {
 import { useAlfredStore } from "@/stores/alfred";
 import { say } from "./alfred";
 import { api } from "./api";
-import { celebrate, celebrateCaseMark } from "./celebrate";
+import { celebrateCaseMark } from "./celebrate";
 import { queryKeys } from "./queries";
 import type {
   ApiEnvelope,
-  EarnedTrophy,
   Mission,
   MissionCompletion,
   MissionDetail,
@@ -171,27 +170,17 @@ export function useUpdateMission(id: number) {
   });
 }
 
+/** Alfred's word and any case mark. XP, levels and trophies arrive as rewards (RewardsHost). */
 function announceCompletion(result: MissionCompletion) {
-  const { say: alfredSays } = useAlfredStore.getState();
-  const rewards = [
-    result.xp_awarded ? `+${result.xp_awarded} XP` : null,
-    result.level_up ? `Level ${result.current_level}` : null,
-  ].filter(Boolean);
-
   if (result.case_milestone) {
     const { case_id, name, milestone } = result.case_milestone;
     celebrateCaseMark(case_id, name, milestone);
-  } else if (result.achievements.length || result.level_up) {
-    void celebrate();
   }
 
-  alfredSays({
+  useAlfredStore.getState().say({
     mood: "proud",
-    title: result.achievements.length
-      ? `Trophy earned: ${result.achievements.map((trophy: EarnedTrophy) => trophy.name).join(", ")}`
-      : say("missionComplete", 0),
-    message: [say("missionCompleteDetail", 0), rewards.join(" · ")].filter(Boolean).join(" "),
-    actions: result.achievements.length ? [{ label: "View trophies", href: "/trophies" }] : [],
+    title: say("missionComplete", 0),
+    message: say("missionCompleteDetail", 0),
   });
 }
 

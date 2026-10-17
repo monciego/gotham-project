@@ -4,6 +4,8 @@ export type ApiEnvelope<T = null> = {
   message: string;
   data: T;
   errors: Record<string, string[]> | null;
+  /** XP, a level and trophies the request earned (App\Support\Rewards). */
+  rewards?: Rewards;
 };
 
 export type User = {
@@ -183,11 +185,16 @@ export type CaseCompletion = {
 /** A case's progress passing 25, 50, 75 or 100%. */
 export type CaseMark = 25 | 50 | 75 | 100;
 
+export type TrophyRarity = "common" | "rare" | "epic" | "legendary";
+
 export type EarnedTrophy = {
+  id: number;
   key: string;
   name: string;
   description: string;
-  rarity: "common" | "rare" | "epic" | "legendary";
+  /** A Lucide icon name (components/trophies/trophy-icons.ts). */
+  icon: string;
+  rarity: TrophyRarity;
   xp_reward: number;
 };
 
@@ -625,4 +632,50 @@ export type WeeklyReport = {
   trophies: string[];
   summary: string;
   generated_at: string;
+};
+
+/** missions, cases, arsenal, focus, intel, resources, alfred, progression, special. */
+export type TrophyCategory = string;
+
+export type Trophy = EarnedTrophy & {
+  category: TrophyCategory;
+  earned: boolean;
+  earned_at: string | null;
+  /** Null for criteria the API doesn't track. */
+  progress: { current: number; target: number } | null;
+};
+
+export type LevelProgress = {
+  current_level: number;
+  total_xp: number;
+  level_start_xp: number;
+  next_level_xp: number;
+  xp_into_level: number;
+  xp_per_level: number;
+};
+
+export type TrophyCase = {
+  level: LevelProgress;
+  summary: { earned: number; total: number };
+  trophies: Trophy[];
+};
+
+export type XpEvent = {
+  id: number;
+  /** Negative when XP was taken back. */
+  amount: number;
+  reason: string;
+  label: string | null;
+  total_after: number;
+  level_before: number;
+  level_after: number;
+  created_at: string;
+};
+
+/** What a request earned; any successful response may carry it as `rewards`. */
+export type Rewards = {
+  xp: { amount: number; reason: string; label: string | null }[];
+  xp_total: number;
+  level_up: { from: number; to: number } | null;
+  trophies: (EarnedTrophy & { category: TrophyCategory; earned_at: string })[];
 };

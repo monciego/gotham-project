@@ -143,23 +143,8 @@ export function useCompleteCase(id: number) {
     onSuccess: (result) => {
       queryClient.setQueryData(caseKeys.detail(id), result.case);
       void celebrate();
-
-      const rewards = [
-        result.xp_awarded ? `+${result.xp_awarded} XP` : null,
-        result.level_up ? `Level ${result.current_level}` : null,
-      ].filter(Boolean);
-      const trophies = result.achievements.map((trophy) => trophy.name);
-
-      useAlfredStore.getState().say({
-        mood: "proud",
-        title: say("caseClosed", 0),
-        message: [result.case.name, rewards.join(" · "), trophies.length ? `Trophy earned: ${trophies.join(", ")}.` : null]
-          .filter(Boolean)
-          .join(" "),
-        actions: trophies.length ? [{ label: "View trophies", href: "/trophies" }] : [],
-      });
-
-      void queryClient.invalidateQueries({ queryKey: queryKeys.me });
+      // The +500 XP, any level and trophies arrive as rewards (RewardsHost).
+      useAlfredStore.getState().say({ mood: "proud", title: say("caseClosed", 0), message: result.case.name });
       void queryClient.invalidateQueries({ queryKey: queryKeys.alerts });
     },
     onSettled: () => refreshAfterChange(queryClient),

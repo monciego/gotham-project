@@ -70,23 +70,19 @@ function refreshAround(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.alerts });
 }
 
-/** Alfred marks streak milestones, trophies and level-ups. Ordinary check-ins stay quiet. */
+/**
+ * Alfred marks streak milestones. Ordinary check-ins stay quiet; XP, levels
+ * and trophies arrive as rewards (RewardsHost).
+ */
 function announce(result: HabitCheckIn) {
-  const { milestone, achievements, level_up, habit } = result;
-  if (!milestone && !achievements.length && !level_up) return;
+  const { milestone, habit } = result;
+  if (!milestone) return;
 
   void celebrate();
-  const unit = habit.streak_unit;
-
   useAlfredStore.getState().say({
     mood: "proud",
-    title: milestone
-      ? say(MILESTONE_LINES[milestone as keyof typeof MILESTONE_LINES] ?? "streak7", 0)
-      : achievements.length
-        ? `Trophy earned: ${achievements.map((trophy) => trophy.name).join(", ")}`
-        : `Level ${result.current_level}, sir.`,
-    message: milestone ? `${habit.name}: ${milestone} ${unit} in a row.` : `+${result.xp_awarded} XP for ${habit.name}.`,
-    actions: achievements.length ? [{ label: "View trophies", href: "/trophies" }] : [],
+    title: say(MILESTONE_LINES[milestone as keyof typeof MILESTONE_LINES] ?? "streak7", 0),
+    message: `${habit.name}: ${milestone} ${habit.streak_unit} in a row.`,
   });
 }
 

@@ -6,9 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useAlfredStore } from "@/stores/alfred";
 import { api } from "./api";
-import { celebrate } from "./celebrate";
 import { queryKeys } from "./queries";
 import type {
   ApiEnvelope,
@@ -102,19 +100,9 @@ export function useCreateIntel() {
       const { data } = await api.post<ApiEnvelope<IntelFiled>>("/intel", input);
       return data.data;
     },
-    onSuccess: ({ entry, achievements, level_up, current_level }) => {
+    // XP, levels and trophies arrive as rewards (RewardsHost).
+    onSuccess: ({ entry }) => {
       queryClient.setQueryData<IntelDetail>(intelKeys.detail(entry.id), (detail) => detail && { ...detail, entry });
-      if (achievements.length || level_up) {
-        void celebrate();
-        useAlfredStore.getState().say({
-          mood: "proud",
-          title: achievements.length
-            ? `Trophy earned: ${achievements.map((trophy) => trophy.name).join(", ")}`
-            : `Level ${current_level}, sir.`,
-          message: "+5 XP for today's Intel.",
-          actions: achievements.length ? [{ label: "View trophies", href: "/trophies" }] : [],
-        });
-      }
     },
     onSettled: refresh,
   });

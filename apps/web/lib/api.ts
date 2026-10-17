@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type AxiosInstance } from "axios";
+import { useRewardsStore } from "@/stores/rewards";
 import { AUTH_PAGES } from "./routes";
-import type { ApiEnvelope } from "./types";
+import type { ApiEnvelope, Rewards } from "./types";
 
 /** Every failed request rejects with this, whatever went wrong. */
 export class ApiError extends Error {
@@ -20,12 +21,15 @@ type ClientOptions = {
   /** Supplies the Bearer token. Only server code can, since the cookie is httpOnly. */
   getToken?: () => Promise<string | undefined>;
   onUnauthorized?: () => void;
+  /** Called with what a successful request earned (`rewards` in the envelope). */
+  onRewards?: (rewards: Rewards) => void;
 };
 
 export function createApiClient({
   baseURL,
   getToken,
   onUnauthorized,
+  onRewards,
 }: ClientOptions): AxiosInstance {
   const client = axios.create({
     baseURL,
@@ -41,7 +45,13 @@ export function createApiClient({
   });
 
   client.interceptors.response.use(
-    undefined,
+    (response) => {
+      const rewards = (response.data as Partial<ApiEnvelope<unknown>> | undefined)?.rewards;
+      if (rewards) {
+        onRewards?.(rewards);
+      }
+      return response;
+    },
     (error: AxiosError<Partial<ApiEnvelope<unknown>>>) => {
       const status = error.response?.status ?? 0;
       if (status === 401) {
@@ -75,6 +85,8 @@ function redirectToLogin() {
 export const api = createApiClient({
   baseURL: "/api/backend",
   onUnauthorized: redirectToLogin,
+  // Any response can carry trophies, a level or XP; RewardsHost celebrates them.
+  onRewards: (rewards) => useRewardsStore.getState().receive(rewards),
 });
 
 /** Login, register and logout: Next.js routes that set or clear the cookie. */
