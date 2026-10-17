@@ -97,7 +97,8 @@ Web conventions:
   - Messages are server state in `lib/alfred-queries.ts`, polled every 5 minutes. `useAlfredAction()` runs a message's action on the API and follows the result: navigate, show a toast, or open the "I'm stuck" `HelpDialog`.
 - New accounts go through `/onboarding` (the `(onboarding)` route group) before anything else: the `(gotham)` layout redirects there until `onboarding_completed`. Each step saves through the normal endpoints; `POST /onboarding/complete` finishes it.
 - Global overlays live in `CommandHost` (`(gotham)` layout), opened through `stores/command.ts`: the command palette (Ctrl/⌘ K), the shortcuts table (Ctrl/⌘ /), the focus-session picker (Ctrl/⌘ F) and the mode switcher (the mode pill). Shortcuts are listed once in `lib/shortcuts.ts`; Ctrl works on a Mac too, since macOS keeps ⌘H and ⌘M.
-- Life modes are described in `lib/modes.ts`. The mode's colour is the sidebar's accent.
+- Life modes are described in `lib/modes.ts`. The mode's colour runs along the top of the sidebar.
+- Sidebar links show the Gotham name with the generic one under it (`subtitle` in `lib/nav.ts`), unless the user turns off `show_nav_subtitles` (Settings → Appearance). The active link is gold.
 - PWA: `app/manifest.ts`, icons in `public/icons` (bat on black), and `public/sw.js`, registered only in production builds (`components/service-worker.tsx`). It caches static assets and shows `/offline` for pages; it never caches `/api`.
 - Loading states are skeletons (`@gotham/ui/components/ui/skeleton`), not spinners. Spinners are only for buttons that submit.
 - Animation uses `motion` (Framer Motion's current package; import from `motion/react`). `Providers` sets `reducedMotion="user"`.

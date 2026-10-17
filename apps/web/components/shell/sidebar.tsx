@@ -2,6 +2,7 @@
 
 import { Skeleton } from "@gotham/ui/components/ui/skeleton";
 import { cn } from "@gotham/ui/lib/utils";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MODES } from "@/lib/modes";
@@ -13,42 +14,62 @@ import { UserAvatar } from "./user-avatar";
 export function Sidebar() {
   const pathname = usePathname();
   const { data: user } = useMe();
-  // The life mode's colour is the sidebar's accent; gold until the user loads.
+  // The life mode's colour runs along the top of the sidebar; gold until the user loads.
   const accent = user ? MODES[user.current_mode].color : "var(--primary)";
+  // Settings → Appearance. On until the user says otherwise.
+  const showSubtitles = user?.show_nav_subtitles ?? true;
 
   return (
     <aside
       style={{ "--mode": accent } as React.CSSProperties}
       className="fixed inset-y-0 left-0 z-30 flex w-16 flex-col border-r border-sidebar-border bg-sidebar md:w-64"
     >
-      <div className="flex h-16 items-center justify-center gap-2 border-b border-sidebar-border shadow-[inset_0_2px_0_var(--mode)] transition-shadow duration-300 md:justify-start md:px-5">
-        <span aria-hidden className="text-lg">
+      <div className="flex h-16 shrink-0 items-center justify-center gap-3 border-b border-sidebar-border shadow-[inset_0_2px_0_var(--mode)] transition-shadow duration-300 md:justify-start md:px-5">
+        <span aria-hidden className="text-2xl leading-none">
           🦇
         </span>
-        <span className="hidden font-mono text-sm font-semibold tracking-[0.35em] text-primary md:inline">
-          ALFRED
-        </span>
+        <div className="hidden leading-tight md:block">
+          <span className="block text-xl font-bold tracking-widest text-primary">ALFRED</span>
+          <span className="block text-[10px] tracking-widest text-muted-foreground uppercase">Gotham Project</span>
+        </div>
       </div>
 
       <nav aria-label="Main" className="flex-1 overflow-y-auto p-2 md:p-3">
         <ul className="grid gap-1">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          {NAV_ITEMS.map(({ href, label, subtitle, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (
               <li key={href}>
                 <Link
                   href={href}
-                  title={label}
+                  title={`${label} (${subtitle})`}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-10 items-center justify-center gap-3 rounded-lg text-sm transition-colors duration-300 md:justify-start md:px-3",
-                    active
-                      ? "bg-[color-mix(in_oklch,var(--mode)_16%,transparent)] font-medium text-foreground shadow-[inset_3px_0_0_var(--mode)]"
-                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
+                    "flex min-h-10 items-center justify-center gap-3 rounded-lg transition-colors duration-200 md:justify-start md:px-4 md:py-3",
+                    active ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-sidebar-accent",
                   )}
                 >
-                  <Icon className={cn("size-4 shrink-0 transition-colors duration-300", active && "text-(--mode)")} aria-hidden />
-                  <span className="sr-only md:not-sr-only">{label}</span>
+                  <Icon size={18} className="shrink-0" aria-hidden />
+                  <span className="sr-only grid md:not-sr-only">
+                    <span className="text-sm font-medium">{label}</span>
+                    <AnimatePresence initial={false}>
+                      {showSubtitles && (
+                        <motion.span
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          className={cn(
+                            "block overflow-hidden text-xs",
+                            // #6B7280, as specified for the generic names.
+                            active ? "text-primary-foreground" : "text-[#6b7280]",
+                          )}
+                        >
+                          {subtitle}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </span>
                 </Link>
               </li>
             );

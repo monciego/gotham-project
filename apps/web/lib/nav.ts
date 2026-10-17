@@ -12,18 +12,19 @@ import {
 } from "lucide-react";
 import { HOME } from "./routes";
 
-export type NavItem = { href: string; label: string; icon: LucideIcon };
+/** `label` is the Gotham name; `subtitle` the generic one, shown under it unless the user turns it off. */
+export type NavItem = { href: string; label: string; subtitle: string; icon: LucideIcon };
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: HOME, label: "HQ", icon: Home },
-  { href: "/missions", label: "Missions", icon: Target },
-  { href: "/arsenal", label: "Arsenal", icon: Zap },
-  { href: "/intel", label: "Intel", icon: BookOpen },
-  { href: "/resources", label: "Resources", icon: DollarSign },
-  { href: "/operations", label: "Operations", icon: Calendar },
-  { href: "/cases", label: "Cases", icon: Briefcase },
-  { href: "/overview", label: "Overview", icon: BarChart3 },
-  { href: "/trophies", label: "Trophies", icon: Trophy },
+  { href: HOME, label: "HQ", subtitle: "Dashboard", icon: Home },
+  { href: "/missions", label: "Missions", subtitle: "Tasks", icon: Target },
+  { href: "/arsenal", label: "Arsenal", subtitle: "Habits", icon: Zap },
+  { href: "/intel", label: "Intel", subtitle: "Journal", icon: BookOpen },
+  { href: "/resources", label: "Resources", subtitle: "Finance", icon: DollarSign },
+  { href: "/operations", label: "Operations", subtitle: "Calendar", icon: Calendar },
+  { href: "/cases", label: "Cases", subtitle: "Projects", icon: Briefcase },
+  { href: "/overview", label: "Overview", subtitle: "Analytics", icon: BarChart3 },
+  { href: "/trophies", label: "Trophies", subtitle: "Achievements", icon: Trophy },
 ];
 
 /** Pages reached from the user menu rather than the sidebar. */

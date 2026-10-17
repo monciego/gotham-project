@@ -39,7 +39,8 @@ class SettingsTest extends TestCase
             ->assertJsonPath('data.notification_preferences.morning_brief', true)
             ->assertJsonPath('data.notification_preferences.quiet_hours_start', null)
             ->assertJsonPath('data.alfred_aggressiveness', 'normal')
-            ->assertJsonPath('data.theme', 'dark');
+            ->assertJsonPath('data.theme', 'dark')
+            ->assertJsonPath('data.show_nav_subtitles', true);
 
         $this->putJson('/api/v1/settings', [
             'notification_preferences' => ['streak_warnings' => false, 'quiet_hours_start' => '22:00', 'quiet_hours_end' => '07:00'],
@@ -47,6 +48,7 @@ class SettingsTest extends TestCase
             'work_end_time' => '17:30',
             'alfred_aggressiveness' => 'intense',
             'theme' => 'light',
+            'show_nav_subtitles' => false,
         ])
             ->assertOk()
             ->assertJsonPath('data.notification_preferences.streak_warnings', false)
@@ -55,7 +57,8 @@ class SettingsTest extends TestCase
             ->assertJsonPath('data.notification_preferences.quiet_hours_end', '07:00')
             ->assertJsonPath('data.work_start_time', '08:30')
             ->assertJsonPath('data.alfred_aggressiveness', 'intense')
-            ->assertJsonPath('data.theme', 'light');
+            ->assertJsonPath('data.theme', 'light')
+            ->assertJsonPath('data.show_nav_subtitles', false);
 
         $this->putJson('/api/v1/settings', ['notification_preferences' => ['morning_brief' => false]])
             ->assertJsonPath('data.notification_preferences.streak_warnings', false)
@@ -71,6 +74,7 @@ class SettingsTest extends TestCase
             'work_start_time' => '9am',
             'alfred_aggressiveness' => 'brutal',
             'theme' => 'neon',
+            'show_nav_subtitles' => 'sometimes',
         ])->assertUnprocessable()->assertJsonValidationErrors([
             'notification_preferences',
             'notification_preferences.morning_brief',
@@ -78,6 +82,7 @@ class SettingsTest extends TestCase
             'work_start_time',
             'alfred_aggressiveness',
             'theme',
+            'show_nav_subtitles',
         ]);
 
         $this->putJson('/api/v1/settings', ['work_start_time' => '09:00', 'work_end_time' => '09:00'])

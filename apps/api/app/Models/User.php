@@ -29,6 +29,7 @@ use Laravel\Sanctum\HasApiTokens;
     'onboarding_completed',
     'daily_focus_goal_minutes',
     'theme',
+    'show_nav_subtitles',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -76,6 +77,7 @@ class User extends Authenticatable
             'notification_preferences' => 'array',
             'onboarding_completed' => 'boolean',
             'daily_focus_goal_minutes' => 'integer',
+            'show_nav_subtitles' => 'boolean',
         ];
     }
 

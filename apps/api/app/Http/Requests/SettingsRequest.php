@@ -25,6 +25,7 @@ class SettingsRequest extends FormRequest
             'work_end_time' => ['nullable', 'date_format:H:i', 'required_with:work_start_time', 'different:work_start_time'],
             'alfred_aggressiveness' => ['sometimes', Rule::in(User::AGGRESSIVENESS)],
             'theme' => ['sometimes', Rule::in(User::THEMES)],
+            'show_nav_subtitles' => ['sometimes', 'boolean'],
         ];
     }
 

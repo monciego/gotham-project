@@ -65,6 +65,7 @@ class SettingsController extends Controller
             'work_end_time' => $this->time($user->work_end_time),
             'alfred_aggressiveness' => $user->aggressiveness(),
             'theme' => $user->theme ?? 'dark',
+            'show_nav_subtitles' => $user->show_nav_subtitles ?? true,
         ];
     }
 

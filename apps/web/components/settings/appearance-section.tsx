@@ -2,9 +2,10 @@
 
 import { cn } from "@gotham/ui/lib/utils";
 import { Moon, Sun } from "lucide-react";
+import { Switch } from "@/components/forms/switch";
 import { useUpdateSettings } from "@/lib/settings-queries";
 import type { Settings, Theme } from "@/lib/types";
-import { SettingsSection } from "./settings-section";
+import { SettingRow, SettingsSection } from "./settings-section";
 
 const THEMES: { value: Theme; label: string; icon: typeof Moon }[] = [
   { value: "dark", label: "Dark", icon: Moon },
@@ -33,6 +34,20 @@ export function AppearanceSection({ settings }: { settings: Settings }) {
             {label}
           </button>
         ))}
+      </div>
+
+      <div className="mt-4 border-t border-border pt-1">
+        <SettingRow
+          htmlFor="show-nav-subtitles"
+          label="Show navigation subtitles"
+          description="Show generic names below Gotham labels (e.g. 'Habits' under 'Arsenal')"
+        >
+          <Switch
+            id="show-nav-subtitles"
+            checked={settings.show_nav_subtitles}
+            onChange={(checked) => update.mutate({ show_nav_subtitles: checked })}
+          />
+        </SettingRow>
       </div>
     </SettingsSection>
   );

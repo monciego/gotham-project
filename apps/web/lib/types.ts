@@ -24,6 +24,8 @@ export type User = {
   work_end_time: string | null;
   alfred_aggressiveness: Aggressiveness;
   theme: Theme;
+  /** The generic names under the sidebar's Gotham labels. */
+  show_nav_subtitles: boolean;
   onboarding_completed: boolean;
   daily_focus_goal_minutes: number;
   created_at: string;
@@ -50,7 +52,13 @@ export type NotificationSwitch = Exclude<keyof NotificationPreferences, "quiet_h
 /** GET/PUT /settings. */
 export type Settings = Pick<
   User,
-  "current_mode" | "notification_preferences" | "work_start_time" | "work_end_time" | "alfred_aggressiveness" | "theme"
+  | "current_mode"
+  | "notification_preferences"
+  | "work_start_time"
+  | "work_end_time"
+  | "alfred_aggressiveness"
+  | "theme"
+  | "show_nav_subtitles"
 >;
 
 export type SettingsInput = Partial<Omit<Settings, "current_mode" | "notification_preferences">> & {
