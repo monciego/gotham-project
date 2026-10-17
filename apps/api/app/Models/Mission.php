@@ -97,6 +97,12 @@ class Mission extends Model
         return in_array($this->status, ['not_started', 'in_progress'], true);
     }
 
+    /** Only completed focus sessions count as time put in. */
+    public function recalculateActualMinutes(): void
+    {
+        $this->update(['actual_minutes' => (int) $this->focusSessions()->completed()->sum('duration_minutes')]);
+    }
+
     public function scopeCompleted(Builder $query): void
     {
         $query->where('status', 'completed');

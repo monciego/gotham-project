@@ -47,8 +47,9 @@ class MissionResource extends JsonResource
             'subtasks_completed_count' => $this->whenCounted('subtasks_completed'),
             'subtasks' => SubtaskResource::collection($this->whenLoaded('subtasks')),
             'focus_sessions' => FocusSessionResource::collection($this->whenLoaded('focusSessions')),
+            // Completed sessions only, like `actual_minutes`.
             'total_focus_minutes' => $this->whenLoaded('focusSessions', fn () => (int) $this->focusSessions
-                ->whereNotNull('end_time')
+                ->where('completed', true)
                 ->sum('duration_minutes')),
             'active_session' => $this->whenLoaded('focusSessions', function () {
                 $running = $this->focusSessions->first(fn (FocusSession $session) => $session->end_time === null);

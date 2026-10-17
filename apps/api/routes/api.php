@@ -61,8 +61,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/missions/{mission}/dependencies', [MissionDependencyController::class, 'store'])->whereNumber('mission');
     Route::delete('/missions/{mission}/dependencies/{dependsOn}', [MissionDependencyController::class, 'destroy'])->whereNumber(['mission', 'dependsOn']);
 
-    Route::post('/missions/{mission}/focus-sessions', [FocusSessionController::class, 'store'])->whereNumber('mission');
-    Route::post('/focus-sessions/{session}/end', [FocusSessionController::class, 'end'])->whereNumber('session');
+    Route::controller(FocusSessionController::class)->group(function () {
+        Route::get('/focus-sessions', 'index');
+        Route::post('/focus-sessions', 'store');
+        Route::get('/focus-sessions/{session}', 'show')->whereNumber('session');
+        Route::post('/focus-sessions/{session}/complete', 'complete')->whereNumber('session');
+        Route::post('/focus-sessions/{session}/abandon', 'abandon')->whereNumber('session');
+        Route::patch('/focus-sessions/{session}/energy', 'updateEnergy')->whereNumber('session');
+    });
 
     Route::get('/cases', [CaseController::class, 'index']);
 

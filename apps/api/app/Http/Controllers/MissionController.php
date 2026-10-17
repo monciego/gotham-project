@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\MissionRequest;
+use App\Http\Resources\EarnedTrophyResource;
 use App\Http\Resources\MissionResource;
-use App\Models\Achievement;
 use App\Models\FocusSession;
 use App\Models\Mission;
 use App\Models\User;
 use App\Services\Achievements;
+use App\Services\FocusSessions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +23,10 @@ class MissionController extends Controller
     /** Alfred steps in when a mission has been pushed back this many times. */
     private const POSTPONE_WARNING = 3;
 
-    public function __construct(private Achievements $achievements) {}
+    public function __construct(
+        private Achievements $achievements,
+        private FocusSessions $focus,
+    ) {}
 
     /**
      * `view`: today | upcoming | overdue | all. Upcoming and overdue only list open
@@ -161,7 +165,9 @@ class MissionController extends Controller
         if ($model->status !== 'completed') {
             DB::transaction(function () use ($user, $model, &$xp, &$trophies) {
                 $model->update(['status' => 'completed', 'completed_at' => now(), 'abandon_reason' => null]);
-                $this->endRunningSession($model);
+                // The work is done, so a running session counts as completed.
+                $model->focusSessions()->running()->get()
+                    ->each(fn (FocusSession $session) => $this->focus->complete($user, $session));
 
                 if ($model->xp_awarded === 0) {
                     $xp = $model->xpReward();
@@ -183,13 +189,7 @@ class MissionController extends Controller
             'total_xp' => $user->total_xp,
             'current_level' => $user->current_level,
             'level_up' => $user->current_level > $levelBefore,
-            'achievements' => $trophies->map(fn (Achievement $achievement) => [
-                'key' => $achievement->key,
-                'name' => $achievement->name,
-                'description' => $achievement->description,
-                'rarity' => $achievement->rarity,
-                'xp_reward' => $achievement->xp_reward,
-            ])->values(),
+            'achievements' => EarnedTrophyResource::collection($trophies->values()),
         ], 'Well done, sir. Gotham is a little safer tonight.');
     }
 
@@ -200,7 +200,8 @@ class MissionController extends Controller
         $this->ensureOpen($model);
 
         $model->update(['status' => 'abandoned', 'abandon_reason' => $validated['reason']]);
-        $this->endRunningSession($model);
+        $model->focusSessions()->running()->get()
+            ->each(fn (FocusSession $session) => $session->finish(completed: false));
         $model->case?->recalculateProgress();
 
         return $this->success(new MissionResource($this->detailed($request->user(), $mission)), 'Mission abandoned.');
@@ -230,12 +231,6 @@ class MissionController extends Controller
             'dependencies',
             'dependents',
         ])->findOrFail($id);
-    }
-
-    /** A closed mission keeps no timer running. */
-    private function endRunningSession(Mission $mission): void
-    {
-        $mission->focusSessions()->whereNull('end_time')->get()->each(fn (FocusSession $session) => $session->finish());
     }
 
     private function ensureOpen(Mission $mission): void

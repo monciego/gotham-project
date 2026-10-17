@@ -21,9 +21,16 @@ class FocusSessionResource extends JsonResource
             'end_time' => $this->end_time,
             'duration_minutes' => $this->duration_minutes,
             'completed' => $this->completed,
+            'distractions' => $this->distractions,
+            'xp_awarded' => $this->xp_awarded,
             'energy_before' => $this->energy_before,
             'energy_after' => $this->energy_after,
             'notes' => $this->notes,
+            'mission' => $this->whenLoaded('mission', fn () => $this->mission ? [
+                'id' => $this->mission->id,
+                'title' => $this->mission->title,
+                'status' => $this->mission->status,
+            ] : null),
         ];
     }
 }
