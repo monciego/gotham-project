@@ -61,6 +61,19 @@ const lines = {
   breakdownIntro: ["Don't think about the whole mission, sir. Just this."],
   breakdownDone: ["You've started. Momentum is everything. Start a full session?"],
   pastSelf: ["Your past self has something to say:"],
+  casesEmpty: ["No cases, sir. What is Gotham fighting for?"],
+  casesFiltered: ["No cases here, sir."],
+  caseNotFound: ["I can't find that case, sir."],
+  caseOpened: ["Case opened, sir. Let's see it through."],
+  caseClosed: ["Case closed. Batman would be proud."],
+  caseCloseIntro: ["Close the file, sir? Open missions stay where they are."],
+  caseMissionsEmpty: ["No missions on this case yet, sir. Every case starts with a first step."],
+  caseMilestonesEmpty: ["No milestones yet, sir. Mark the waypoints and we'll know how far we've come."],
+  // Progress marks (see App\Services\CaseProgress, which posts the same lines).
+  caseMark25: ["A quarter of the way, sir. The trail is warming."],
+  caseMark50: ["Halfway there, sir. The case is turning in our favor."],
+  caseMark75: ["Three quarters done, sir. The end is in sight."],
+  caseMark100: ["Every piece is in place, sir. Shall we close the case?"],
 } as const;
 
 export type AlfredEvent = keyof typeof lines;

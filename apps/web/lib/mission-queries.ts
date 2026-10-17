@@ -11,11 +11,10 @@ import {
 import { useAlfredStore } from "@/stores/alfred";
 import { say } from "./alfred";
 import { api } from "./api";
-import { celebrate } from "./celebrate";
+import { celebrate, celebrateCaseMark } from "./celebrate";
 import { queryKeys } from "./queries";
 import type {
   ApiEnvelope,
-  CaseSummary,
   EarnedTrophy,
   Mission,
   MissionCompletion,
@@ -45,7 +44,6 @@ export const missionKeys = {
   list: (params: Record<string, string>) => ["missions", "list", params] as const,
   detail: (id: number) => ["missions", "detail", id] as const,
   options: () => ["missions", "options"] as const,
-  cases: ["cases"] as const,
 };
 
 type ListData = InfiniteData<Paginated<Mission>>;
@@ -91,14 +89,6 @@ export function useMissionOptions() {
   });
 }
 
-export function useCases() {
-  return useQuery({
-    queryKey: missionKeys.cases,
-    queryFn: () => get<CaseSummary[]>("/cases"),
-    staleTime: 5 * 60_000,
-  });
-}
-
 /* Optimistic cache helpers ------------------------------------------------ */
 
 /** Snapshots every mission query, applies a change, and returns an undo. */
@@ -138,6 +128,8 @@ function patchDetail(
 
 function refreshAfterChange(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: missionKeys.all });
+  // caseKeys.all: a case's progress follows its missions (case-queries imports this module).
+  void queryClient.invalidateQueries({ queryKey: ["cases"] });
   void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
 }
 
@@ -186,7 +178,10 @@ function announceCompletion(result: MissionCompletion) {
     result.level_up ? `Level ${result.current_level}` : null,
   ].filter(Boolean);
 
-  if (result.achievements.length || result.level_up) {
+  if (result.case_milestone) {
+    const { case_id, name, milestone } = result.case_milestone;
+    celebrateCaseMark(case_id, name, milestone);
+  } else if (result.achievements.length || result.level_up) {
     void celebrate();
   }
 

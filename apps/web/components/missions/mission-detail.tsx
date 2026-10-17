@@ -68,9 +68,12 @@ export function MissionDetailView({ id, openBreakdown }: { id: number; openBreak
           <PriorityBadge priority={mission.priority} />
           <StatusBadge status={mission.status} />
           {mission.case && (
-            <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+            <Link
+              href={`/cases/${mission.case.id}`}
+              className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors duration-200 hover:border-primary/40 hover:text-foreground"
+            >
               {mission.case.name}
-            </span>
+            </Link>
           )}
         </div>
         <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{mission.title}</h2>

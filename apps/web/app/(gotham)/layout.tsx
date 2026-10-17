@@ -1,4 +1,5 @@
 import { StreakGuard } from "@/components/arsenal/streak-guard";
+import { ProgressCelebration } from "@/components/cases/progress-celebration";
 import { Providers } from "@/components/providers";
 import { AlfredHost } from "@/components/shell/alfred-host";
 import { Header } from "@/components/shell/header";
@@ -15,6 +16,7 @@ export default function GothamLayout({ children }: { children: React.ReactNode }
       </div>
       <AlfredHost />
       <StreakGuard />
+      <ProgressCelebration />
     </Providers>
   );
 }

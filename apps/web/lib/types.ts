@@ -100,13 +100,88 @@ export type Paginated<T> = {
   meta: { current_page: number; last_page: number; per_page: number; total: number };
 };
 
-export type CaseSummary = {
+export type CaseStatus = "planning" | "active" | "on_hold" | "completed" | "archived";
+
+export type CaseColor = "gray" | "blue" | "purple" | "red" | "teal" | "pink";
+
+/** A case as the list returns it. */
+export type Case = {
   id: number;
   name: string;
-  status: string;
-  color: string | null;
+  description: string | null;
+  status: CaseStatus;
+  category: string | null;
+  start_date: string;
+  target_end_date: string | null;
+  actual_end_date: string | null;
+  /** 0–100. */
   progress: number;
+  /** `auto` follows the missions; `manual` is set by hand. */
+  progress_mode: "auto" | "manual";
+  color: CaseColor | null;
+  tags: string[];
+  /** Cleaned HTML from the editor. */
+  notes: string | null;
+  xp_awarded: number;
+  created_at: string;
+  /** Not counting abandoned missions. */
+  missions_total: number;
+  missions_completed: number;
+  /** Against a straight line from start to target; null when closed or without a target. */
+  schedule: "on_track" | "behind" | null;
 };
+
+export type CaseMilestone = {
+  id: number;
+  name: string;
+  target_date: string;
+  completed: boolean;
+  completed_at: string | null;
+  is_overdue: boolean;
+};
+
+export type CaseAnalytics = {
+  total_focus_minutes: number;
+  missions_total: number;
+  missions_completed: number;
+  missions_remaining: number;
+  missions_per_week: number;
+  weeks_elapsed: number;
+  /** At the current pace; null without one. */
+  estimated_completion: string | null;
+  progress_history: { date: string; progress: number }[];
+};
+
+export type CaseDetail = Case & {
+  missions: Mission[];
+  milestones: CaseMilestone[];
+  analytics: CaseAnalytics;
+};
+
+export type CaseInput = {
+  name: string;
+  description: string | null;
+  status: Exclude<CaseStatus, "completed">;
+  category: string | null;
+  start_date: string;
+  target_end_date: string | null;
+  progress_mode: Case["progress_mode"];
+  color: CaseColor | null;
+  tags: string[];
+  notes: string | null;
+};
+
+export type CaseCompletion = {
+  case: CaseDetail;
+  xp_awarded: number;
+  total_xp: number;
+  current_level: number;
+  level_up: boolean;
+  achievements: EarnedTrophy[];
+};
+
+/** A case's progress passing 25, 50, 75 or 100%. */
+export type CaseMark = 25 | 50 | 75 | 100;
 
 export type EarnedTrophy = {
   key: string;
@@ -123,6 +198,8 @@ export type MissionCompletion = {
   current_level: number;
   level_up: boolean;
   achievements: EarnedTrophy[];
+  /** Set when this completion carried its case past a mark. */
+  case_milestone: { case_id: number; name: string; milestone: CaseMark } | null;
 };
 
 /** What the create and edit forms send. */

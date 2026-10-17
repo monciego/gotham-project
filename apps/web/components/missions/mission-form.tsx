@@ -16,7 +16,8 @@ import { SubmitButton } from "@/components/forms/submit-button";
 import { say } from "@/lib/alfred";
 import { todayIso } from "@/lib/format";
 import { applyApiErrors } from "@/lib/form-errors";
-import { useCases, useCreateMission, useUpdateMission } from "@/lib/mission-queries";
+import { useCases } from "@/lib/case-queries";
+import { useCreateMission, useUpdateMission } from "@/lib/mission-queries";
 import { useMe } from "@/lib/queries";
 import type { Mission, MissionInput } from "@/lib/types";
 import { ChoicePills } from "./choice-pills";
@@ -71,7 +72,7 @@ const ENERGY = [
   { value: "low", label: "Low" },
 ];
 
-function toValues(mission?: Mission): FormValues {
+function toValues(mission?: Mission, caseId?: number): FormValues {
   return {
     title: mission?.title ?? "",
     description: mission?.description ?? "",
@@ -80,7 +81,7 @@ function toValues(mission?: Mission): FormValues {
     due_date: mission?.due_date ?? todayIso(),
     due_time: mission?.due_time ?? "",
     estimated_minutes: mission?.estimated_minutes?.toString() ?? "",
-    case_id: mission?.case_id?.toString() ?? "",
+    case_id: (mission?.case_id ?? caseId)?.toString() ?? "",
     energy_required: mission?.energy_required ?? "medium",
     tags: mission?.tags ?? [],
     notes: mission?.notes ?? "",
@@ -102,10 +103,16 @@ function toInput(values: FormValues): MissionInput {
   };
 }
 
-export function MissionForm({ mission }: { mission?: Mission }) {
+/** `caseId` preselects a case for a new mission. */
+export function MissionForm({ mission, caseId }: { mission?: Mission; caseId?: number }) {
   const router = useRouter();
   const { data: user } = useMe();
-  const { data: cases } = useCases();
+  const { data: allCases } = useCases();
+  // Open cases, plus the one already chosen.
+  const chosenCase = mission?.case_id ?? caseId;
+  const cases = allCases?.filter(
+    (item) => ["planning", "active", "on_hold"].includes(item.status) || item.id === chosenCase,
+  );
   const create = useCreateMission();
   const update = useUpdateMission(mission?.id ?? 0);
   const [formError, setFormError] = useState<string | null>(null);
@@ -116,7 +123,7 @@ export function MissionForm({ mission }: { mission?: Mission }) {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: toValues(mission) });
+  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: toValues(mission, caseId) });
 
   async function onSubmit(values: FormValues) {
     setFormError(null);
@@ -196,7 +203,14 @@ export function MissionForm({ mission }: { mission?: Mission }) {
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field id="case_id" label="Case (optional)" error={errors.case_id?.message}>
-          <NativeSelect id="case_id" className="w-full" {...invalid("case_id")} {...register("case_id")}>
+          {/* Remounted once cases load, so the chosen case's option exists when the form sets its value. */}
+          <NativeSelect
+            key={cases ? "loaded" : "loading"}
+            id="case_id"
+            className="w-full"
+            {...invalid("case_id")}
+            {...register("case_id")}
+          >
             <option value="">No case</option>
             {cases?.map((item) => (
               <option key={item.id} value={item.id}>
