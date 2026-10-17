@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'notes',
     'past_self_message',
     'completed_at',
+    'abandon_reason',
 ])]
 class Mission extends Model
 {
@@ -43,6 +44,7 @@ class Mission extends Model
             'times_postponed' => 'integer',
             'tags' => 'array',
             'completed_at' => 'datetime',
+            'xp_awarded' => 'integer',
         ];
     }
 
@@ -76,6 +78,23 @@ class Mission extends Model
     public function focusSessions(): HasMany
     {
         return $this->hasMany(FocusSession::class);
+    }
+
+    public function subtasks(): HasMany
+    {
+        return $this->hasMany(Subtask::class)->orderBy('order')->orderBy('id');
+    }
+
+    public const XP = ['critical' => 100, 'high' => 75, 'medium' => 50, 'low' => 25];
+
+    public function xpReward(): int
+    {
+        return self::XP[$this->priority] ?? self::XP['medium'];
+    }
+
+    public function isOpen(): bool
+    {
+        return in_array($this->status, ['not_started', 'in_progress'], true);
     }
 
     public function scopeCompleted(Builder $query): void

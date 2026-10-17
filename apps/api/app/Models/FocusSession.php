@@ -44,6 +44,25 @@ class FocusSession extends Model
         return $this->belongsTo(Mission::class);
     }
 
+    /**
+     * Ends the session and records the time spent, up to the planned length, on
+     * it and its mission. With no `$completed`, it counts as completed if it ran
+     * its full length.
+     */
+    public function finish(?bool $completed = null): void
+    {
+        $elapsed = (int) round($this->start_time->diffInMinutes(now()));
+        $minutes = max(1, min($elapsed, $this->duration_minutes));
+
+        $this->fill([
+            'end_time' => now(),
+            'duration_minutes' => $minutes,
+            'completed' => $completed ?? $elapsed >= $this->duration_minutes,
+        ])->save();
+
+        $this->mission?->increment('actual_minutes', $minutes);
+    }
+
     public function scopeCompleted(Builder $query): void
     {
         $query->where('completed', true);

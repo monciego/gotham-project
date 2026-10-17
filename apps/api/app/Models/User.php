@@ -36,6 +36,8 @@ class User extends Authenticatable
 
     public const DEFAULT_FOCUS_GOAL_MINUTES = 240;
 
+    public const XP_PER_LEVEL = 1000;
+
     /**
      * Get the attributes that should be cast.
      *
@@ -52,6 +54,17 @@ class User extends Authenticatable
             'onboarding_completed' => 'boolean',
             'daily_focus_goal_minutes' => 'integer',
         ];
+    }
+
+    /** Adds XP and recalculates the level. Returns whether the user levelled up. */
+    public function gainXp(int $xp): bool
+    {
+        $before = $this->current_level;
+        $this->total_xp += $xp;
+        $this->current_level = intdiv($this->total_xp, self::XP_PER_LEVEL) + 1;
+        $this->save();
+
+        return $this->current_level > $before;
     }
 
     public function focusGoalMinutes(): int

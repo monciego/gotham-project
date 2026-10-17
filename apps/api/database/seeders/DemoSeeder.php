@@ -13,7 +13,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Sample data for the local test user, so HQ has something to show.
- * Re-running it replaces that user's missions, habits, focus sessions and messages.
+ * Re-running it resets that user: XP, trophies, missions, habits, focus sessions and messages.
  */
 class DemoSeeder extends Seeder
 {
@@ -21,6 +21,8 @@ class DemoSeeder extends Seeder
     {
         $user = User::where('email', 'test@example.com')->firstOrFail();
         $user->update(['name' => 'Bruce Wayne']);
+        $user->forceFill(['total_xp' => 0, 'current_level' => 1])->save();
+        $user->achievements()->detach();
 
         $user->missions()->withTrashed()->forceDelete();
         $user->arsenal()->delete();

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 ])]
 class CaseFile extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected function casts(): array
     {
@@ -56,6 +57,21 @@ class CaseFile extends Model
     public function milestones(): HasMany
     {
         return $this->hasMany(CaseMilestone::class, 'case_id');
+    }
+
+    /** Auto-progress cases track the share of their (non-abandoned) missions that are done. */
+    public function recalculateProgress(): void
+    {
+        if ($this->progress_mode !== 'auto') {
+            return;
+        }
+
+        $statuses = $this->missions()->where('status', '!=', 'abandoned')->pluck('status');
+        $completed = $statuses->filter(fn (string $status) => $status === 'completed')->count();
+
+        $this->update([
+            'progress' => $statuses->isEmpty() ? 0 : (int) round($completed / $statuses->count() * 100),
+        ]);
     }
 
     public function scopeActive(Builder $query): void
