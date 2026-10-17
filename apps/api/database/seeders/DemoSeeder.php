@@ -34,7 +34,7 @@ class DemoSeeder extends Seeder
     public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment, RecurringResources $recurring, CaseProgress $caseProgress, ReportService $reports, AchievementService $achievements): void
     {
         $user = User::where('email', 'test@example.com')->firstOrFail();
-        $user->update(['name' => 'Bruce Wayne', 'work_start_time' => '08:00', 'work_end_time' => '18:00']);
+        $user->update(['name' => 'Bruce Wayne', 'work_start_time' => '08:00', 'work_end_time' => '18:00', 'onboarding_completed' => true, 'current_mode' => 'bruce', 'theme' => 'dark', 'notification_preferences' => null, 'alfred_aggressiveness' => 'normal']);
         $user->forceFill(['total_xp' => 0, 'current_level' => 1])->save();
         $user->achievements()->detach();
 

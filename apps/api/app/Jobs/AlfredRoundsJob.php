@@ -12,6 +12,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
  * - 08:00–21:59: procrastination (no start after 10am, avoided missions).
  * - 20:00: streaks in danger.
  * - 23:00: burnout, energy patterns, and fresh insights.
+ * Warnings are skipped during the user's quiet hours; the learning still runs.
  * Runs in the scheduler's process (it isn't queued).
  */
 class AlfredRoundsJob
@@ -25,17 +26,20 @@ class AlfredRoundsJob
     {
         User::query()->chunkById(200, fn ($users) => $users->each(function (User $user) use ($intelligence) {
             $hour = CarbonImmutable::now($user->timezone)->hour;
+            $quiet = $user->inQuietHours();
 
-            if ($hour >= self::WAKING_HOURS[0] && $hour <= self::WAKING_HOURS[1]) {
+            if (! $quiet && $hour >= self::WAKING_HOURS[0] && $hour <= self::WAKING_HOURS[1]) {
                 $intelligence->detectProcrastination($user);
             }
 
-            if ($hour === 20) {
+            if (! $quiet && $hour === 20) {
                 $intelligence->detectStreakDanger($user);
             }
 
             if ($hour === 23) {
-                $intelligence->detectBurnout($user);
+                if (! $quiet) {
+                    $intelligence->detectBurnout($user);
+                }
                 $intelligence->learnEnergyPatterns($user);
                 $intelligence->generateInsights($user);
             }

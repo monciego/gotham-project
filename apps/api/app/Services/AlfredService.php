@@ -97,10 +97,31 @@ class AlfredService
         ],
     ];
 
-    /** Creates the message. `$data` fills the placeholders; the type's `subject` key names its subject id. */
-    public function sendMessage(User $user, string $type, array $data = []): AlfredMessage
+    /**
+     * Which notification switch (User::NOTIFICATION_DEFAULTS) silences each
+     * type. Types not listed always send.
+     */
+    private const PREFERENCES = [
+        'no_start' => 'alfred_alerts',
+        'task_avoidance' => 'alfred_alerts',
+        'burnout_detected' => 'alfred_alerts',
+        'streak_danger' => 'streak_warnings',
+        'achievement_unlocked' => 'achievement_unlocks',
+    ];
+
+    /**
+     * Creates the message, or returns null when the user has turned that kind
+     * of message off. `$data` fills the placeholders; the type's `subject` key
+     * names its subject id.
+     */
+    public function sendMessage(User $user, string $type, array $data = []): ?AlfredMessage
     {
         $template = self::TYPES[$type] ?? throw new InvalidArgumentException("Unknown Alfred message type [{$type}].");
+
+        if (isset(self::PREFERENCES[$type]) && ! $user->wantsNotification(self::PREFERENCES[$type])) {
+            return null;
+        }
+
         $fill = fn (string $text) => $this->fill($text, $data);
 
         return $user->alfredMessages()->create([
@@ -119,6 +140,13 @@ class AlfredService
             'requires_action' => $template['requires_action'],
             'read_at' => ($template['receipt'] ?? false) ? now() : null,
         ]);
+    }
+
+    /** One of the user's aggressiveness settings (config gotham.alfred.aggressiveness). */
+    public function threshold(User $user, string $key): int
+    {
+        return config("gotham.alfred.aggressiveness.{$user->aggressiveness()}.{$key}")
+            ?? config("gotham.alfred.aggressiveness.normal.{$key}");
     }
 
     /**

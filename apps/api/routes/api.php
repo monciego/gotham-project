@@ -14,10 +14,13 @@ use App\Http\Controllers\InsightController;
 use App\Http\Controllers\IntelController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\MissionDependencyController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\SavingsGoalController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubtaskController;
 use App\Http\Controllers\TrophyController;
 use App\Http\Middleware\RecordDailyActivity;
@@ -187,4 +190,16 @@ Route::middleware(['auth:sanctum', RecordDailyActivity::class])->group(function 
         Route::patch('/alfred/messages/{message}/read', 'read')->whereNumber('message');
         Route::post('/alfred/messages/{message}/action', 'action')->whereNumber('message');
     });
+
+    Route::controller(SettingsController::class)->group(function () {
+        Route::get('/settings', 'show');
+        Route::put('/settings', 'update');
+        Route::put('/settings/mode', 'updateMode');
+        // Builds a ZIP of everything, so it is rate limited.
+        Route::get('/settings/export', 'export')->middleware('throttle:3,1');
+    });
+
+    Route::post('/onboarding/complete', [OnboardingController::class, 'complete']);
+
+    Route::get('/search', SearchController::class)->middleware('throttle:120,1');
 });

@@ -19,6 +19,15 @@ use Illuminate\Support\Str;
  */
 class DashboardController extends Controller
 {
+    /** Alfred's word on the day, by mode. */
+    private const MODE_LINES = [
+        'batman' => 'Batman mode. No grace, no excuses: every mission counts tonight.',
+        'wayne' => 'Wayne mode. The company needs you; work comes first today.',
+        'bruce' => 'Bruce mode. Balance, sir: the work, the habits, and the man behind them.',
+        'playboy' => 'Playboy mode. People matter too. Keep the essentials and enjoy the rest.',
+        'rest' => 'Rest mode. Nothing on the list demands you today, sir. Recover.',
+    ];
+
     public function __construct(private ArsenalStreaks $streaks) {}
 
     public function index(Request $request): JsonResponse
@@ -31,7 +40,10 @@ class DashboardController extends Controller
         return $this->success([
             'morning_brief' => [
                 'greeting' => $this->greeting($user),
-                'mission' => $this->briefMission($user, $today),
+                'mode' => $user->mode(),
+                'mode_line' => self::MODE_LINES[$user->mode()],
+                // Rest mode doesn't push a mission; today's list below still shows them.
+                'mission' => $user->mode() === 'rest' ? null : $this->briefMission($user, $today),
                 'habits' => $todaysArsenal->where('completed', false)->take(3)->values(),
                 'quote' => BatmanQuotes::forDay($user->id, $today->toDateString()),
             ],

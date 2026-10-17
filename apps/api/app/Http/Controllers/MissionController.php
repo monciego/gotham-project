@@ -23,9 +23,6 @@ use Illuminate\Validation\Rule;
 
 class MissionController extends Controller
 {
-    /** Alfred steps in (task_avoidance) once a mission has been pushed back this many times. */
-    private const POSTPONE_WARNING = 3;
-
     public function __construct(
         private AchievementService $achievements,
         private FocusSessions $focus,
@@ -140,7 +137,7 @@ class MissionController extends Controller
             ]);
         }
 
-        if ($model->wasChanged('times_postponed') && $model->times_postponed >= self::POSTPONE_WARNING
+        if ($model->wasChanged('times_postponed') && $model->times_postponed >= $this->alfred->threshold($user, 'avoidance_postponements')
             && ! $this->alfred->sentToday($user, 'task_avoidance', $model->id)) {
             $this->alfred->sendMessage($user, 'task_avoidance', [
                 'title' => $model->title,

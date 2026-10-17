@@ -43,6 +43,7 @@ class AchievementService
         'resource_save' => ['resources_logged', 'days_with_resources', 'months_within_budget'],
         'alfred_action' => ['alfred_actions_taken', 'alfred_action_fast'],
         'daily_login' => ['login_streak', 'onboarding_completed'],
+        'onboarding_complete' => ['onboarding_completed'],
         // After a trophy's XP: only level trophies.
         'level' => [],
     ];

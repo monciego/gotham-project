@@ -10,6 +10,7 @@ use App\Services\AchievementService;
 use App\Services\ArsenalCheckIns;
 use App\Services\FocusSessions;
 use App\Services\Missions;
+use App\Services\Modes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -20,8 +21,6 @@ use Illuminate\Validation\ValidationException;
  */
 class AlfredController extends Controller
 {
-    private const MODES = ['batman', 'wayne', 'bruce', 'playboy', 'rest'];
-
     /** Minutes in the session Alfred starts for an avoided mission. */
     private const FORCED_SESSION_MINUTES = 25;
 
@@ -30,6 +29,7 @@ class AlfredController extends Controller
         private ArsenalCheckIns $checkIns,
         private FocusSessions $focus,
         private Missions $missions,
+        private Modes $modes,
     ) {}
 
     /**
@@ -171,15 +171,13 @@ class AlfredController extends Controller
 
     private function switchMode(User $user, string $mode): array
     {
-        if (! in_array($mode, self::MODES, true)) {
+        if (! in_array($mode, User::MODES, true)) {
             throw ValidationException::withMessages(['action' => 'There is no such mode, sir.']);
         }
 
-        $user->update(['current_mode' => $mode]);
+        $this->modes->switch($user, $mode, 'alfred');
 
-        return $mode === 'rest'
-            ? ['type' => 'toast', 'title' => 'Rest mode, sir.', 'message' => "I'll keep the city quiet. Recover; Gotham will keep."]
-            : ['type' => 'toast', 'title' => 'Mode changed, sir.', 'message' => ucfirst($mode).' mode.'];
+        return ['type' => 'toast', ...Modes::announcement($mode)];
     }
 
     private function completeHabit(User $user, int $habitId): array

@@ -51,12 +51,6 @@ class AlfredIntelligence
 
     private const WEEKDAYS = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday'];
 
-    /** No sessions started or missions finished by this local hour, and Alfred asks why. */
-    public const NO_START_HOUR = 10;
-
-    /** Missions postponed this often count as avoided. */
-    public const AVOIDANCE_POSTPONEMENTS = 3;
-
     /** Days between burnout warnings. */
     private const BURNOUT_EVERY_DAYS = 3;
 
@@ -71,7 +65,8 @@ class AlfredIntelligence
      * After 10am with nothing started (no focus session begun, no mission
      * completed): no_start, once a day, except in Rest mode. And
      * task_avoidance for each open mission postponed 3+ times, once a day
-     * each, unless an unread warning about it is still waiting.
+     * each, unless an unread warning about it is still waiting. The hour and
+     * the count follow the user's aggressiveness (config gotham.alfred).
      */
     public function detectProcrastination(User $user): void
     {
@@ -81,12 +76,12 @@ class AlfredIntelligence
         $startedSomething = $user->focusSessions()->where('start_time', '>=', $since)->exists()
             || $user->missions()->completed()->where('completed_at', '>=', $since)->exists();
 
-        if ($now->hour >= self::NO_START_HOUR && ($user->current_mode ?? 'bruce') !== 'rest'
+        if ($now->hour >= $this->alfred->threshold($user, 'no_start_hour') && $user->mode() !== 'rest'
             && ! $startedSomething && ! $this->alfred->sentToday($user, 'no_start')) {
             $this->alfred->sendMessage($user, 'no_start', ['time' => $now->format('g:i A')]);
         }
 
-        $avoided = $user->missions()->open()->where('times_postponed', '>=', self::AVOIDANCE_POSTPONEMENTS)->get();
+        $avoided = $user->missions()->open()->where('times_postponed', '>=', $this->alfred->threshold($user, 'avoidance_postponements'))->get();
 
         foreach ($avoided as $mission) {
             $waiting = $user->alfredMessages()->where('type', 'task_avoidance')->where('subject_id', $mission->id)
@@ -127,7 +122,7 @@ class AlfredIntelligence
      */
     public function detectBurnout(User $user): void
     {
-        if (($user->current_mode ?? 'bruce') === 'rest') {
+        if ($user->mode() === 'rest') {
             return;
         }
 

@@ -15,4 +15,19 @@ return [
 
     ],
 
+    'alfred' => [
+
+        /*
+        | How hard Alfred pushes, by the user's alfred_aggressiveness:
+        | - no_start_hour: local hour after which "you haven't started" fires
+        | - avoidance_postponements: postponements before a mission counts as avoided
+        */
+        'aggressiveness' => [
+            'mild' => ['no_start_hour' => 12, 'avoidance_postponements' => 4],
+            'normal' => ['no_start_hour' => 10, 'avoidance_postponements' => 3],
+            'intense' => ['no_start_hour' => 9, 'avoidance_postponements' => 2],
+        ],
+
+    ],
+
 ];

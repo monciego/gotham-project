@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -27,6 +28,7 @@ use Laravel\Sanctum\HasApiTokens;
     'alfred_aggressiveness',
     'onboarding_completed',
     'daily_focus_goal_minutes',
+    'theme',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -37,6 +39,27 @@ class User extends Authenticatable
     public const DEFAULT_FOCUS_GOAL_MINUTES = 240;
 
     public const XP_PER_LEVEL = 1000;
+
+    public const MODES = ['batman', 'wayne', 'bruce', 'playboy', 'rest'];
+
+    public const AGGRESSIVENESS = ['mild', 'normal', 'intense'];
+
+    public const THEMES = ['dark', 'light'];
+
+    /**
+     * Notification switches, all on unless the user turns them off, and quiet
+     * hours ("HH:MM" start and end, null when unset) when Alfred's rounds stay silent.
+     */
+    public const NOTIFICATION_DEFAULTS = [
+        'morning_brief' => true,
+        'habit_reminders' => true,
+        'mission_deadlines' => true,
+        'alfred_alerts' => true,
+        'streak_warnings' => true,
+        'achievement_unlocks' => true,
+        'quiet_hours_start' => null,
+        'quiet_hours_end' => null,
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -68,6 +91,41 @@ class User extends Authenticatable
         $this->save();
 
         return $this->current_level > $before;
+    }
+
+    /** The saved preferences over the defaults, so every key is present. */
+    public function notificationPreferences(): array
+    {
+        return [...self::NOTIFICATION_DEFAULTS, ...array_intersect_key($this->notification_preferences ?? [], self::NOTIFICATION_DEFAULTS)];
+    }
+
+    public function wantsNotification(string $key): bool
+    {
+        return (bool) ($this->notificationPreferences()[$key] ?? true);
+    }
+
+    /** Whether it's within the user's quiet hours now, in their timezone. Spans midnight when start > end. */
+    public function inQuietHours(?CarbonInterface $now = null): bool
+    {
+        ['quiet_hours_start' => $start, 'quiet_hours_end' => $end] = $this->notificationPreferences();
+        if (! $start || ! $end || $start === $end) {
+            return false;
+        }
+
+        $time = CarbonImmutable::instance($now ?? now())->setTimezone($this->timezone)->format('H:i');
+
+        return $start < $end ? $time >= $start && $time < $end : $time >= $start || $time < $end;
+    }
+
+    /** A user created in memory hasn't loaded the column defaults yet. */
+    public function mode(): string
+    {
+        return $this->current_mode ?? 'bruce';
+    }
+
+    public function aggressiveness(): string
+    {
+        return $this->alfred_aggressiveness ?? 'normal';
     }
 
     public function focusGoalMinutes(): int
