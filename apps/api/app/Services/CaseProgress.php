@@ -76,6 +76,8 @@ class CaseProgress
             'title' => "{$case->name}: {$mark}%",
             'message' => self::LINES[$mark],
             'actions' => [['label' => $mark === 100 ? 'Close the case' : 'Open case', 'href' => "/cases/{$case->id}"]],
+            // Shown on screen as it happened, so it goes straight into the history.
+            'read_at' => now(),
         ]);
 
         return $mark;

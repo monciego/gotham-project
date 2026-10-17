@@ -9,7 +9,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Something Alfred says. `actions` are [{label, href?, action?, variant?}]:
+ * `href` is a link; `action` is run by POST /alfred/messages/{id}/action
+ * (see App\Http\Controllers\AlfredController). Typed messages come from
+ * App\Services\AlfredService.
+ */
 #[Fillable([
+    'type',
+    'subject_id',
     'priority',
     'mood',
     'title',
@@ -34,6 +42,7 @@ class AlfredMessage extends Model
             'dismissed_at' => 'datetime',
             'action_taken' => 'boolean',
             'acted_at' => 'datetime',
+            'subject_id' => 'integer',
         ];
     }
 

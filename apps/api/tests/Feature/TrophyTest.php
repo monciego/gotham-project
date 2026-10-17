@@ -57,7 +57,7 @@ class TrophyTest extends TestCase
 
         $this->assertNotNull($response->json('rewards.trophies.0.earned_at'));
         $this->assertSame(2, $this->user->xpEvents()->count());
-        $this->assertDatabaseHas('alfred_messages', ['title' => 'Trophy unlocked: First Patrol. Well earned, sir.', 'mood' => 'proud']);
+        $this->assertDatabaseHas('alfred_messages', ['type' => 'achievement_unlocked', 'title' => 'Trophy earned.', 'mood' => 'proud']);
 
         // Nothing earned, no rewards; errors never carry them.
         $this->getJson('/api/v1/missions')->assertOk()->assertJsonMissingPath('rewards');
@@ -190,19 +190,20 @@ class TrophyTest extends TestCase
 
     public function test_acting_on_alfred_within_five_minutes_ten_times(): void
     {
-        $slow = AlfredMessage::factory()->for($this->user)->create();
+        $withLink = ['actions' => [['label' => 'Open', 'href' => '/hq']]];
+        $slow = AlfredMessage::factory()->for($this->user)->create($withLink);
         $this->travel(6)->minutes();
-        $this->postJson("/api/v1/alfred-messages/{$slow->id}/act")->assertOk();
+        $this->postJson("/api/v1/alfred/messages/{$slow->id}/action", ['action' => 'link'])->assertOk();
 
         foreach (range(1, 9) as $index) {
-            $message = AlfredMessage::factory()->for($this->user)->create();
+            $message = AlfredMessage::factory()->for($this->user)->create($withLink);
             $this->travel(2)->minutes();
-            $this->postJson("/api/v1/alfred-messages/{$message->id}/act");
+            $this->postJson("/api/v1/alfred/messages/{$message->id}/action", ['action' => 'link']);
         }
         $this->assertFalse($this->earned('alfred_fast_10'));
 
-        $message = AlfredMessage::factory()->for($this->user)->create();
-        $this->postJson("/api/v1/alfred-messages/{$message->id}/act")
+        $message = AlfredMessage::factory()->for($this->user)->create($withLink);
+        $this->postJson("/api/v1/alfred/messages/{$message->id}/action", ['action' => 'link'])
             ->assertJsonPath('rewards.trophies.0.key', 'alfred_fast_10');
     }
 

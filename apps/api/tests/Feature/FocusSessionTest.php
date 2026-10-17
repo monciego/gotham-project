@@ -88,7 +88,8 @@ class FocusSessionTest extends TestCase
         $this->assertDatabaseHas('alfred_messages', [
             'user_id' => $this->user->id,
             'title' => 'Well done, sir.',
-            'message' => '50 minutes of focused work.',
+            'message' => "50 minutes of focused work on '{$mission->title}'. Gotham is a little safer tonight.",
+            'type' => 'session_complete',
         ]);
 
         $this->postJson("/api/v1/focus-sessions/{$session}/complete")->assertJsonValidationErrors(['session']);

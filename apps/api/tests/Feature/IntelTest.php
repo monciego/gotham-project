@@ -87,10 +87,10 @@ class IntelTest extends TestCase
         $entry = $this->user->intel()->sole();
         $this->putJson("/api/v1/intel/{$entry->id}", ['content' => '<p>Exhausted.</p>'])->assertOk();
 
-        $this->assertSame(1, $this->user->alfredMessages()->where('title', 'You sound worn down, sir.')->count());
+        $this->assertSame(1, $this->user->alfredMessages()->where('type', 'burnout_detected')->where('title', 'Alfred is concerned.')->count());
     }
 
-    public function test_three_negative_days_in_a_row_get_an_alfred_message(): void
+    public function test_three_negative_entries_in_a_row_get_an_alfred_message(): void
     {
         Intel::factory()->for($this->user)->create(['date' => '2026-10-15', 'sentiment_label' => 'negative']);
         Intel::factory()->for($this->user)->create(['date' => '2026-10-16', 'sentiment_label' => 'negative']);
@@ -98,17 +98,18 @@ class IntelTest extends TestCase
         $this->postJson('/api/v1/intel', $this->entry(['content' => '<p>Terrible, awful day.</p>']))
             ->assertJsonPath('data.entry.sentiment_label', 'negative');
 
-        $this->assertDatabaseHas('alfred_messages', ['user_id' => $this->user->id, 'title' => 'Three hard days in a row, sir.']);
+        $this->assertDatabaseHas('alfred_messages', ['user_id' => $this->user->id, 'type' => 'burnout_detected', 'priority' => 'high']);
     }
 
-    public function test_a_gap_breaks_the_negative_stretch(): void
+    public function test_a_better_entry_among_the_last_three_breaks_the_stretch(): void
     {
         Intel::factory()->for($this->user)->create(['date' => '2026-10-14', 'sentiment_label' => 'negative']);
+        Intel::factory()->for($this->user)->create(['date' => '2026-10-15', 'sentiment_label' => 'positive']);
         Intel::factory()->for($this->user)->create(['date' => '2026-10-16', 'sentiment_label' => 'negative']);
 
         $this->postJson('/api/v1/intel', $this->entry(['content' => '<p>Terrible, awful day.</p>']));
 
-        $this->assertDatabaseMissing('alfred_messages', ['title' => 'Three hard days in a row, sir.']);
+        $this->assertDatabaseMissing('alfred_messages', ['type' => 'burnout_detected']);
     }
 
     public function test_index_filters_by_dates_mood_tag_and_search(): void

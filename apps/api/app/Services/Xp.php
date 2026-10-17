@@ -50,6 +50,8 @@ class Xp
                 'title' => "Level {$user->current_level}, sir.",
                 'message' => "You're becoming who you need to be, sir.",
                 'actions' => [['label' => 'View trophies', 'href' => '/trophies']],
+                // Shown on screen as it happened, so it goes straight into the history.
+                'read_at' => now(),
             ]);
         }
 

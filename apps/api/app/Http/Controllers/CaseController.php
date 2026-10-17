@@ -9,6 +9,7 @@ use App\Models\CaseFile;
 use App\Models\Mission;
 use App\Models\User;
 use App\Services\AchievementService;
+use App\Services\AlfredService;
 use App\Services\CaseAnalytics;
 use App\Services\CaseProgress;
 use App\Services\Xp;
@@ -30,6 +31,7 @@ class CaseController extends Controller
         private CaseAnalytics $analytics,
         private AchievementService $achievements,
         private Xp $xp,
+        private AlfredService $alfred,
     ) {}
 
     /**
@@ -140,13 +142,7 @@ class CaseController extends Controller
                 $this->xp->award($user, $xp, 'case_complete', $model->name);
             }
 
-            $user->alfredMessages()->create([
-                'priority' => 'medium',
-                'mood' => 'proud',
-                'title' => 'Case closed. Batman would be proud.',
-                'message' => $xp > 0 ? "{$model->name} is closed. +{$xp} XP." : "{$model->name} is closed.",
-                'actions' => [['label' => 'View case', 'href' => "/cases/{$model->id}"]],
-            ]);
+            $this->alfred->sendMessage($user, 'case_closed', ['name' => $model->name, 'case_id' => $model->id]);
 
             return $this->achievements->checkAndAward($user, 'case_complete');
         });

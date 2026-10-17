@@ -16,13 +16,16 @@ class AlfredMessageResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'type' => $this->type,
             'priority' => $this->priority,
             'mood' => $this->mood,
             'title' => $this->title,
             'message' => $this->message,
             'actions' => $this->actions ?? [],
             'requires_action' => $this->requires_action,
+            'action_taken' => $this->action_taken,
             'read_at' => $this->read_at,
+            'dismissed_at' => $this->dismissed_at,
             'created_at' => $this->created_at,
         ];
     }

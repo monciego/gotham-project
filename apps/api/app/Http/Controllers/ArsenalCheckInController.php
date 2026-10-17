@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\EarnedTrophyResource;
 use App\Models\Arsenal;
-use App\Models\ArsenalLog;
 use App\Models\User;
-use App\Services\AchievementService;
+use App\Services\ArsenalCheckIns;
 use App\Services\ArsenalStreaks;
 use App\Services\Xp;
 use Illuminate\Http\JsonResponse;
@@ -21,16 +20,9 @@ use Illuminate\Validation\ValidationException;
  */
 class ArsenalCheckInController extends Controller
 {
-    /** Alfred's line for each streak milestone. */
-    private const MILESTONE_TITLES = [
-        7 => "Seven in a row, sir. That's no longer luck. That's discipline.",
-        30 => 'Thirty in a row, sir. Gotham will notice the difference.',
-        100 => "One hundred in a row, sir. I confess I'm rather proud.",
-    ];
-
     public function __construct(
         private ArsenalStreaks $streaks,
-        private AchievementService $achievements,
+        private ArsenalCheckIns $checkIns,
         private Xp $xp,
     ) {}
 
@@ -44,45 +36,16 @@ class ArsenalCheckInController extends Controller
 
         $user = $request->user();
         $habit = $this->find($user, $arsenal);
-        $log = $this->todaysLog($habit, $user);
-
-        if ($log?->completed) {
-            throw ValidationException::withMessages(['habit' => 'Already done today, sir.']);
-        }
-
         $levelBefore = $user->current_level;
-        $value = $habit->isMeasurable() ? ($validated['value'] ?? $habit->target_value) : null;
-        $xp = $habit->xpFor($value);
 
-        [$milestone, $trophies] = DB::transaction(function () use ($user, $habit, $log, $value, $xp, $validated) {
-            $log ??= $this->newLog($habit, $user);
-            $log->fill([
-                'completed' => true,
-                'skipped' => false,
-                'value' => $value,
-                'note' => $validated['note'] ?? null,
-                'completed_at' => now(),
-            ]);
-            // Not mass-assignable, so requests can't set it.
-            $log->forceFill(['xp_awarded' => $xp])->save();
-            $this->xp->award($user, $xp, 'habit_complete', $habit->name);
-
-            $streak = $this->streaks->refresh($habit, $user);
-            $milestone = $this->streaks->milestoneReached($streak['before'], $streak['after']);
-            if ($milestone) {
-                $this->announceMilestone($user, $habit, $milestone);
-            }
-
-            return [$milestone, $this->achievements->checkAndAward($user, 'habit_complete')];
-        });
-
+        $outcome = $this->checkIns->complete($user, $habit, $validated['value'] ?? null, $validated['note'] ?? null);
         $user->refresh();
 
         return $this->respond($user, $habit, [
-            'xp_awarded' => $xp,
+            'xp_awarded' => $outcome['xp'],
             'level_up' => $user->current_level > $levelBefore,
-            'milestone' => $milestone,
-            'achievements' => $trophies,
+            'milestone' => $outcome['milestone'],
+            'achievements' => $outcome['trophies'],
         ], 'Habit completed.');
     }
 
@@ -93,7 +56,7 @@ class ArsenalCheckInController extends Controller
 
         $user = $request->user();
         $habit = $this->find($user, $arsenal);
-        $log = $this->todaysLog($habit, $user);
+        $log = $this->checkIns->todaysLog($habit, $user);
 
         if ($log?->completed) {
             throw ValidationException::withMessages(['habit' => 'Already done today, sir. No need to skip it.']);
@@ -102,7 +65,7 @@ class ArsenalCheckInController extends Controller
             throw ValidationException::withMessages(['habit' => 'Already skipped today, sir.']);
         }
 
-        ($log ?? $this->newLog($habit, $user))->fill([
+        ($log ?? $this->checkIns->newLog($habit, $user))->fill([
             'completed' => false,
             'skipped' => true,
             'note' => $validated['reason'] ?? null,
@@ -117,7 +80,7 @@ class ArsenalCheckInController extends Controller
     {
         $user = $request->user();
         $habit = $this->find($user, $arsenal);
-        $log = $this->todaysLog($habit, $user);
+        $log = $this->checkIns->todaysLog($habit, $user);
 
         if ($log) {
             DB::transaction(function () use ($user, $habit, $log) {
@@ -139,39 +102,6 @@ class ArsenalCheckInController extends Controller
         }
 
         return $habit;
-    }
-
-    private function todaysLog(Arsenal $habit, User $user): ?ArsenalLog
-    {
-        return $habit->logs()->whereDate('date', $user->today())->first();
-    }
-
-    private function newLog(Arsenal $habit, User $user): ArsenalLog
-    {
-        return new ArsenalLog([
-            'arsenal_id' => $habit->id,
-            'user_id' => $user->id,
-            'date' => $user->today()->toDateString(),
-        ]);
-    }
-
-    private function announceMilestone(User $user, Arsenal $habit, int $milestone): void
-    {
-        $unit = $habit->isWeekly() ? 'weeks' : 'days';
-        $message = "{$habit->name}: {$milestone} {$unit} in a row.";
-
-        // Undoing and redoing today's check-in crosses the milestone again; say it once.
-        if ($user->alfredMessages()->where('message', $message)->where('created_at', '>=', now()->subDay())->exists()) {
-            return;
-        }
-
-        $user->alfredMessages()->create([
-            'priority' => 'medium',
-            'mood' => 'proud',
-            'title' => self::MILESTONE_TITLES[$milestone],
-            'message' => $message,
-            'actions' => [['label' => 'View habit', 'href' => "/arsenal/{$habit->id}"]],
-        ]);
     }
 
     /**

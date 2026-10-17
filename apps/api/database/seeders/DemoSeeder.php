@@ -13,6 +13,7 @@ use App\Models\Operation;
 use App\Models\Resource;
 use App\Models\User;
 use App\Services\AchievementService;
+use App\Services\AlfredService;
 use App\Services\ArsenalStreaks;
 use App\Services\CaseProgress;
 use App\Services\IntelSentiment;
@@ -378,7 +379,7 @@ class DemoSeeder extends Seeder
         // Trophies the history has earned. Their messages would bury HQ, so they're cleared.
         $achievements->checkAndAward($user, 'all');
         $user->alfredMessages()
-            ->where(fn ($query) => $query->where('title', 'like', 'Trophy unlocked:%')->orWhere('title', 'like', 'Level %, sir.'))
+            ->where(fn ($query) => $query->where('type', 'achievement_unlocked')->orWhere('title', 'like', 'Level %, sir.'))
             ->delete();
 
         // Four weeks of saved reports for "View previous reports".
@@ -386,13 +387,11 @@ class DemoSeeder extends Seeder
             $reports->store($user, $today->subWeeks($weeksAgo));
         }
 
-        AlfredMessage::factory()->for($user)->create([
-            'priority' => 'critical',
-            'mood' => 'concerned',
-            'title' => 'The quarterly report, sir.',
-            'message' => "You've postponed it three times now. I've cleared your morning. Shall we begin?",
-            'actions' => [['label' => 'Show me', 'href' => '/missions']],
-            'requires_action' => true,
+        // The quarterly report has slipped three times: Alfred's panel, as the hourly rounds would send it.
+        app(AlfredService::class)->sendMessage($user, 'task_avoidance', [
+            'title' => $quarterly->title,
+            'count' => $quarterly->times_postponed,
+            'mission_id' => $quarterly->id,
         ]);
         AlfredMessage::factory()->for($user)->create([
             'priority' => 'medium',

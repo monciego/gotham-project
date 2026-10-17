@@ -20,6 +20,10 @@ use Illuminate\Support\Facades\Cache;
  * `system_intelligence` (one row per type, replaced on each run, removed
  * when the pattern no longer holds), where other features can use them:
  * focus blocks start at `energy_pattern.peak_hour`.
+ *
+ * It also keeps watch (App\Jobs\AlfredRoundsJob runs these hourly, by the
+ * user's local hour): procrastination, streaks about to break, and burnout.
+ * Each sends an App\Services\AlfredService message at most once a day per subject.
  */
 class AlfredIntelligence
 {
@@ -47,7 +51,108 @@ class AlfredIntelligence
 
     private const WEEKDAYS = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday'];
 
-    public function __construct(private DailyStats $stats) {}
+    /** No sessions started or missions finished by this local hour, and Alfred asks why. */
+    public const NO_START_HOUR = 10;
+
+    /** Missions postponed this often count as avoided. */
+    public const AVOIDANCE_POSTPONEMENTS = 3;
+
+    /** Days between burnout warnings. */
+    private const BURNOUT_EVERY_DAYS = 3;
+
+    public function __construct(
+        private DailyStats $stats,
+        private AlfredService $alfred,
+        private ArsenalStreaks $streaks,
+        private IntelSentiment $sentiment,
+    ) {}
+
+    /**
+     * After 10am with nothing started (no focus session begun, no mission
+     * completed): no_start, once a day, except in Rest mode. And
+     * task_avoidance for each open mission postponed 3+ times, once a day
+     * each, unless an unread warning about it is still waiting.
+     */
+    public function detectProcrastination(User $user): void
+    {
+        $now = CarbonImmutable::now($user->timezone);
+        $since = $user->today()->utc();
+
+        $startedSomething = $user->focusSessions()->where('start_time', '>=', $since)->exists()
+            || $user->missions()->completed()->where('completed_at', '>=', $since)->exists();
+
+        if ($now->hour >= self::NO_START_HOUR && ($user->current_mode ?? 'bruce') !== 'rest'
+            && ! $startedSomething && ! $this->alfred->sentToday($user, 'no_start')) {
+            $this->alfred->sendMessage($user, 'no_start', ['time' => $now->format('g:i A')]);
+        }
+
+        $avoided = $user->missions()->open()->where('times_postponed', '>=', self::AVOIDANCE_POSTPONEMENTS)->get();
+
+        foreach ($avoided as $mission) {
+            $waiting = $user->alfredMessages()->where('type', 'task_avoidance')->where('subject_id', $mission->id)
+                ->unread()->active()->exists();
+
+            if (! $waiting && ! $this->alfred->sentToday($user, 'task_avoidance', $mission->id)) {
+                $this->alfred->sendMessage($user, 'task_avoidance', [
+                    'title' => $mission->title,
+                    'count' => $mission->times_postponed,
+                    'mission_id' => $mission->id,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * streak_danger for each habit due today, not done, whose streak (over 3)
+     * missing today would end (grace counted). Once a day per habit.
+     */
+    public function detectStreakDanger(User $user): void
+    {
+        $today = $user->today();
+        $habits = $user->arsenal()->where('active', true)->get();
+        $logs = $this->streaks->logsFor($habits, $today);
+
+        foreach ($habits as $habit) {
+            $present = $this->streaks->present($habit, $logs->get($habit->id, collect()), $user);
+
+            if ($present['streak_at_risk'] && ! $this->alfred->sentToday($user, 'streak_danger', $habit->id)) {
+                $this->alfred->sendMessage($user, 'streak_danger', ['count' => $present['current_streak'], 'habit_id' => $habit->id]);
+            }
+        }
+    }
+
+    /**
+     * burnout_detected when the last three Intel entries all read negative,
+     * or the latest one talks of burnout. At most every 3 days, and not in Rest mode.
+     */
+    public function detectBurnout(User $user): void
+    {
+        if (($user->current_mode ?? 'bruce') === 'rest') {
+            return;
+        }
+
+        $recent = $user->intel()->orderByDesc('date')->limit(3)->get();
+        $latest = $recent->first();
+
+        $burnedOut = ($recent->count() === 3 && $recent->every(fn ($entry) => $entry->sentiment_label === 'negative'))
+            || ($latest !== null && $this->sentiment->soundsBurnedOut(implode(' ', [$latest->plainContent(), $latest->struggles])));
+
+        $warnedLately = $user->alfredMessages()->where('type', 'burnout_detected')
+            ->where('created_at', '>=', now()->subDays(self::BURNOUT_EVERY_DAYS))->exists();
+
+        if ($burnedOut && ! $warnedLately) {
+            $this->alfred->sendMessage($user, 'burnout_detected');
+        }
+    }
+
+    /** Updates only `energy_pattern` (the focus-block hour) from the last 60 days. */
+    public function learnEnergyPatterns(User $user): void
+    {
+        $today = $user->today();
+        $pattern = $this->energyPeakHour($user, new Period('energy', $today->subDays(self::DAYS), $today->subDay()));
+
+        $this->savePatterns($user, $pattern === null ? [] : [$pattern], only: ['energy_pattern']);
+    }
 
     /**
      * The cached insights, generated when there are none.
@@ -484,16 +589,17 @@ class AlfredIntelligence
     }
 
     /**
-     * Replaces this service's patterns with the ones found now.
+     * Replaces this service's patterns (or just the `only` types) with the ones found now.
      *
      * @param  list<array<string, mixed>>  $insights
+     * @param  list<string>|null  $only
      */
-    private function savePatterns(User $user, array $insights): void
+    private function savePatterns(User $user, array $insights, ?array $only = null): void
     {
         $found = collect($insights)->keyBy('key');
 
         $user->systemIntelligence()
-            ->whereIn('pattern_type', array_diff(self::PATTERNS, $found->keys()->all()))
+            ->whereIn('pattern_type', array_diff($only ?? self::PATTERNS, $found->keys()->all()))
             ->delete();
 
         foreach ($found as $type => $insight) {

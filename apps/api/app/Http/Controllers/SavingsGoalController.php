@@ -106,6 +106,8 @@ class SavingsGoalController extends Controller
                 'title' => "Goal reached: {$model->name}",
                 'message' => 'Every dollar accounted for, sir. Lucius would approve.',
                 'actions' => [['label' => 'View goals', 'href' => '/resources/goals']],
+                // Shown on screen as it happened, so it goes straight into the history.
+                'read_at' => now(),
             ]);
         }
 

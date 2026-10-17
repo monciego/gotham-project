@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\AlfredMessageController;
+use App\Http\Controllers\AlfredController;
 use App\Http\Controllers\ArsenalCheckInController;
 use App\Http\Controllers\ArsenalController;
 use App\Http\Controllers\AuthController;
@@ -180,7 +180,11 @@ Route::middleware(['auth:sanctum', RecordDailyActivity::class])->group(function 
         Route::get('/user/xp-history', 'xpHistory');
     });
 
-    Route::get('/alfred-messages', [AlfredMessageController::class, 'index']);
-    Route::post('/alfred-messages/{message}/dismiss', [AlfredMessageController::class, 'dismiss'])->whereNumber('message');
-    Route::post('/alfred-messages/{message}/act', [AlfredMessageController::class, 'act'])->whereNumber('message');
+    Route::controller(AlfredController::class)->group(function () {
+        Route::get('/alfred/messages', 'index');
+        Route::patch('/alfred/messages/read-all', 'readAll');
+        Route::patch('/alfred/messages/{message}/dismiss', 'dismiss')->whereNumber('message');
+        Route::patch('/alfred/messages/{message}/read', 'read')->whereNumber('message');
+        Route::post('/alfred/messages/{message}/action', 'action')->whereNumber('message');
+    });
 });

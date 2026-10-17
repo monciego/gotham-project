@@ -58,6 +58,7 @@ class AchievementService
         private DailyStats $daily,
         private Xp $xp,
         private Rewards $rewards,
+        private AlfredService $alfred,
     ) {}
 
     /**
@@ -90,12 +91,9 @@ class AchievementService
         $this->xp->award($user, $achievement->xp_reward, 'trophy', $achievement->name);
         unset($this->stats['level_reached']);
 
-        $user->alfredMessages()->create([
-            'priority' => 'low',
-            'mood' => 'proud',
-            'title' => "Trophy unlocked: {$achievement->name}. Well earned, sir.",
-            'message' => "{$achievement->description} +{$achievement->xp_reward} XP.",
-            'actions' => [['label' => 'View trophies', 'href' => '/trophies']],
+        $this->alfred->sendMessage($user, 'achievement_unlocked', [
+            'achievement_name' => $achievement->name,
+            'description' => rtrim($achievement->description, '.'),
         ]);
 
         $trophy = $this->present($achievement, now()->toIso8601String());

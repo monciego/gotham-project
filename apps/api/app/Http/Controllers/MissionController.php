@@ -9,8 +9,10 @@ use App\Models\FocusSession;
 use App\Models\Mission;
 use App\Models\User;
 use App\Services\AchievementService;
+use App\Services\AlfredService;
 use App\Services\CaseProgress;
 use App\Services\FocusSessions;
+use App\Services\Missions;
 use App\Services\Xp;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,11 +20,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class MissionController extends Controller
 {
-    /** Alfred steps in when a mission has been pushed back this many times. */
+    /** Alfred steps in (task_avoidance) once a mission has been pushed back this many times. */
     private const POSTPONE_WARNING = 3;
 
     public function __construct(
@@ -30,6 +31,8 @@ class MissionController extends Controller
         private FocusSessions $focus,
         private CaseProgress $caseProgress,
         private Xp $xp,
+        private AlfredService $alfred,
+        private Missions $missions,
     ) {}
 
     /**
@@ -137,14 +140,12 @@ class MissionController extends Controller
             ]);
         }
 
-        if ($model->wasChanged('times_postponed') && $model->times_postponed === self::POSTPONE_WARNING) {
-            $user->alfredMessages()->create([
-                'priority' => 'high',
-                'mood' => 'concerned',
-                'title' => 'Postponed three times, sir.',
-                'message' => "\"{$model->title}\" has slipped three times now. Shall we break it into smaller steps?",
-                'actions' => [['label' => 'Break it down', 'href' => "/missions/{$model->id}?breakdown=1"]],
-                'requires_action' => true,
+        if ($model->wasChanged('times_postponed') && $model->times_postponed >= self::POSTPONE_WARNING
+            && ! $this->alfred->sentToday($user, 'task_avoidance', $model->id)) {
+            $this->alfred->sendMessage($user, 'task_avoidance', [
+                'title' => $model->title,
+                'count' => $model->times_postponed,
+                'mission_id' => $model->id,
             ]);
         }
 
@@ -216,13 +217,7 @@ class MissionController extends Controller
     public function abandon(Request $request, int $mission): JsonResponse
     {
         $validated = $request->validate(['reason' => ['required', 'string', 'min:3', 'max:1000']]);
-        $model = $this->find($request->user(), $mission);
-        $this->ensureOpen($model);
-
-        $model->update(['status' => 'abandoned', 'abandon_reason' => $validated['reason']]);
-        $model->focusSessions()->running()->get()
-            ->each(fn (FocusSession $session) => $session->finish(completed: false));
-        $this->caseProgress->recalculate($model->case);
+        $this->missions->abandon($this->find($request->user(), $mission), $validated['reason']);
 
         return $this->success(new MissionResource($this->detailed($request->user(), $mission)), 'Mission abandoned.');
     }
@@ -230,7 +225,7 @@ class MissionController extends Controller
     public function start(Request $request, int $mission): JsonResponse
     {
         $model = $this->find($request->user(), $mission);
-        $this->ensureOpen($model);
+        $this->missions->ensureOpen($model);
 
         $model->update(['status' => 'in_progress']);
 
@@ -251,14 +246,5 @@ class MissionController extends Controller
             'dependencies',
             'dependents',
         ])->findOrFail($id);
-    }
-
-    private function ensureOpen(Mission $mission): void
-    {
-        if (! $mission->isOpen()) {
-            throw ValidationException::withMessages([
-                'status' => "This mission is already {$mission->status}.",
-            ]);
-        }
     }
 }

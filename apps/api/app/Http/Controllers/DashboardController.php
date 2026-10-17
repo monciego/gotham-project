@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\AlfredMessageResource;
 use App\Http\Resources\MissionResource;
 use App\Models\Arsenal;
 use App\Models\User;
@@ -50,13 +49,6 @@ class DashboardController extends Controller
                     ->get()
             ),
             'todays_arsenal' => $todaysArsenal,
-            'alfred_alerts' => AlfredMessageResource::collection(
-                $user->alfredMessages()->unread()->active()
-                    ->orderByPriority()
-                    ->latest()
-                    ->limit(5)
-                    ->get()
-            ),
         ]);
     }
 

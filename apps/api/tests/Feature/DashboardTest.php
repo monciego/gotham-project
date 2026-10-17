@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\AlfredMessage;
 use App\Models\Arsenal;
 use App\Models\ArsenalLog;
 use App\Models\FocusSession;
@@ -123,30 +122,16 @@ class DashboardTest extends TestCase
             ->assertJsonPath('data.stats.focus_time', ['minutes_today' => 75, 'goal_minutes' => 240, 'percentage' => 31]);
     }
 
-    public function test_alerts_are_unread_critical_first_and_capped_at_five(): void
-    {
-        AlfredMessage::factory()->for($this->user)->count(5)->create(['priority' => 'low']);
-        AlfredMessage::factory()->for($this->user)->create(['priority' => 'critical', 'title' => 'Critical']);
-        AlfredMessage::factory()->for($this->user)->create(['priority' => 'critical', 'read_at' => now()]);
-        AlfredMessage::factory()->for($this->user)->create(['priority' => 'critical', 'dismissed_at' => now()]);
-
-        $response = $this->dashboard()->assertJsonCount(5, 'data.alfred_alerts');
-
-        $response->assertJsonPath('data.alfred_alerts.0.title', 'Critical');
-    }
-
     public function test_other_users_data_is_never_included(): void
     {
         $other = User::factory()->create();
         Mission::factory()->for($other)->create(['due_date' => '2026-10-17']);
         Arsenal::factory()->for($other)->create();
-        AlfredMessage::factory()->for($other)->create();
 
         $this->dashboard()
             ->assertJsonPath('data.morning_brief.mission', null)
             ->assertJsonCount(0, 'data.todays_missions')
             ->assertJsonCount(0, 'data.todays_arsenal')
-            ->assertJsonCount(0, 'data.alfred_alerts')
             ->assertJsonPath('data.stats.longest_streak', null);
     }
 

@@ -107,10 +107,13 @@ class MissionTest extends TestCase
         $this->assertSame(0, $this->user->alfredMessages()->count());
 
         $this->api('put', "/missions/{$mission->id}", ['due_date' => '2026-10-21'])->assertJsonPath('data.times_postponed', 3);
+        // A fourth the same day doesn't repeat it.
+        $this->api('put', "/missions/{$mission->id}", ['due_date' => '2026-10-22'])->assertJsonPath('data.times_postponed', 4);
 
         $message = $this->user->alfredMessages()->sole();
-        $this->assertSame('concerned', $message->mood);
-        $this->assertSame("/missions/{$mission->id}?breakdown=1", $message->actions[0]['href']);
+        $this->assertSame('task_avoidance', $message->type);
+        $this->assertSame('disappointed', $message->mood);
+        $this->assertSame("force_start:{$mission->id}", $message->actions[0]['action']);
     }
 
     public function test_complete_awards_xp_once_trophies_and_case_progress(): void
@@ -131,7 +134,7 @@ class MissionTest extends TestCase
         $this->assertSame(50, $case->refresh()->progress);
         // 100 for the mission + trophy XP.
         $this->assertGreaterThan(100, $this->user->refresh()->total_xp);
-        $this->assertSame(1, $this->user->alfredMessages()->where('title', 'Trophy unlocked: First Patrol. Well earned, sir.')->count());
+        $this->assertSame(1, $this->user->alfredMessages()->where('message', "'First Patrol' — Complete your first mission. Well earned, sir.")->count());
 
         // Reopen and complete again: no more XP.
         $this->api('put', "/missions/{$mission->id}", ['status' => 'not_started'])->assertJsonPath('data.completed_at', null);

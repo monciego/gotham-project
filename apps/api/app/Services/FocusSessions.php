@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
  */
 class FocusSessions
 {
-    public function __construct(private Xp $xp) {}
+    public function __construct(private Xp $xp, private AlfredService $alfred) {}
 
     public function start(User $user, ?Mission $mission, int $minutes, ?int $energyBefore): FocusSession
     {
@@ -55,12 +55,10 @@ class FocusSessions
                 $this->xp->award($user, $xp, 'focus_complete', $session->mission?->title ?? "{$session->duration_minutes}-minute focus session");
             }
 
-            $user->alfredMessages()->create([
-                'priority' => 'low',
-                'mood' => 'proud',
-                'title' => 'Well done, sir.',
-                'message' => "{$session->duration_minutes} minutes of focused work.",
-            ]);
+            $this->alfred->sendMessage($user, 'session_complete', array_filter([
+                'minutes' => $session->duration_minutes,
+                'mission' => $session->mission?->title,
+            ], fn ($value) => $value !== null));
 
             return $xp;
         });

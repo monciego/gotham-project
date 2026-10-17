@@ -7,7 +7,7 @@ use App\Http\Resources\EarnedTrophyResource;
 use App\Http\Resources\IntelResource;
 use App\Models\Intel;
 use App\Services\AchievementService;
-use App\Services\IntelAlerts;
+use App\Services\AlfredIntelligence;
 use App\Services\IntelPrompts;
 use App\Services\IntelSentiment;
 use App\Services\Xp;
@@ -26,7 +26,7 @@ class IntelController extends Controller
 {
     public function __construct(
         private IntelSentiment $sentiment,
-        private IntelAlerts $alerts,
+        private AlfredIntelligence $intelligence,
         private IntelPrompts $prompts,
         private AchievementService $achievements,
         private Xp $xp,
@@ -66,7 +66,7 @@ class IntelController extends Controller
         ]);
     }
 
-    /** +5 XP, sentiment, and Alfred's checks for burnout and hard stretches. */
+    /** +5 XP, sentiment, and Alfred's check for burnout. */
     public function store(IntelRequest $request): JsonResponse
     {
         $user = $request->user();
@@ -79,7 +79,7 @@ class IntelController extends Controller
             $entry->forceFill(['xp_awarded' => Intel::XP])->save();
             $this->xp->award($user, Intel::XP, 'journal_save', "Intel for {$entry->date->toFormattedDateString()}");
 
-            $this->alerts->check($user, $entry);
+            $this->intelligence->detectBurnout($user);
 
             return [$entry, $this->achievements->checkAndAward($user, 'journal_save')];
         });
@@ -116,7 +116,7 @@ class IntelController extends Controller
 
         $this->fill($entry, $request);
         $entry->save();
-        $this->alerts->check($user, $entry);
+        $this->intelligence->detectBurnout($user);
         // Gratitude added later still counts toward its trophy.
         $this->achievements->checkAndAward($user, 'journal_save');
 

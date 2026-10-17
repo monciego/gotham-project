@@ -165,7 +165,11 @@ class CaseTest extends TestCase
             ->assertJsonPath('data.xp_awarded', 500);
 
         $this->assertContains('first_case', collect($response->json('data.achievements'))->pluck('key'));
-        $this->assertDatabaseHas('alfred_messages', ['title' => 'Case closed. Batman would be proud.', 'message' => 'The Long Halloween is closed. +500 XP.']);
+        $this->assertDatabaseHas('alfred_messages', [
+            'type' => 'case_closed',
+            'title' => 'Case closed.',
+            'message' => "'The Long Halloween' is complete, sir. Another victory for Gotham. Batman would be proud.",
+        ]);
         $this->postJson("/api/v1/cases/{$case->id}/complete")->assertJsonValidationErrors(['status']);
 
         // Reopening clears the end date; closing again grants no more XP.
