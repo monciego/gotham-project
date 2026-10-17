@@ -434,3 +434,56 @@ export type SavingsGoalInput = { name: string; target_amount: number; deadline: 
 export type Contribution =
   | { resource_id: number }
   | { amount: number; date?: string; account?: string | null; description?: string | null };
+
+export type OperationCategory = "work" | "personal" | "health" | "social" | "other";
+
+/** Gold and green are kept for missions, focus blocks and habits. */
+export type OperationColor = "gray" | "blue" | "purple" | "red" | "teal" | "pink";
+
+export type RecurringRule = { freq: RecurringFrequency; until?: string | null };
+
+/**
+ * One thing on the calendar: an event (or one occurrence of a recurring
+ * one), a focus block, or a habit with a reminder time (read-only).
+ * Timed entries use UTC ISO 8601; all-day entries use dates, `end` exclusive.
+ */
+export type CalendarEntry = {
+  id: string;
+  operation_id: number | null;
+  habit_id?: number;
+  occurrence?: number | null;
+  kind: "event" | "focus_block" | "habit";
+  title: string;
+  description?: string | null;
+  start: string;
+  end: string;
+  /** The series' own times; equal to start and end for one-off events. */
+  series_start?: string;
+  series_end?: string;
+  all_day: boolean;
+  category: string;
+  color?: OperationColor | null;
+  recurring?: boolean;
+  recurring_rule?: RecurringRule | null;
+  reminder_minutes?: number | null;
+  mission?: Pick<Mission, "id" | "title" | "status"> | null;
+  editable: boolean;
+};
+
+/**
+ * Timed: `start`/`end` are ISO 8601 instants. All-day: dates, `end` the day
+ * after the last.
+ */
+export type OperationInput = {
+  title: string;
+  description: string | null;
+  all_day: boolean;
+  start: string;
+  end: string;
+  category: OperationCategory;
+  color: OperationColor | null;
+  recurring: boolean;
+  recurring_rule: RecurringRule | null;
+  reminder_minutes: number | null;
+  mission_id: number | null;
+};

@@ -20,6 +20,7 @@ import { useState } from "react";
 import { say } from "@/lib/alfred";
 import { formatDueDate, formatMinutes } from "@/lib/format";
 import { useCompleteMission, useMission, useUpdateMission } from "@/lib/mission-queries";
+import { useAlfredStore } from "@/stores/alfred";
 import { AbandonDialog } from "./abandon-dialog";
 import { BreakdownDialog } from "./breakdown-dialog";
 import { DependenciesSection } from "./dependencies-section";
@@ -28,8 +29,8 @@ import { MissionNotFound } from "./mission-not-found";
 import { MissionDetailSkeleton } from "./mission-skeletons";
 import { NotesEditor } from "./notes-editor";
 import { PriorityBadge } from "./priority-badge";
-import { ScheduleDialog } from "./schedule-dialog";
 import { QuickStartButton } from "@/components/focus/quick-start-button";
+import { OperationDialog } from "@/components/operations/operation-dialog";
 import { StatusBadge } from "./status-badge";
 import { SubtaskList } from "./subtask-list";
 
@@ -213,7 +214,20 @@ export function MissionDetailView({ id, openBreakdown }: { id: number; openBreak
       </div>
 
       <BreakdownDialog mission={mission} open={dialog === "breakdown"} onOpenChange={closeDialog} />
-      <ScheduleDialog mission={mission} open={dialog === "schedule"} onOpenChange={closeDialog} />
+      {/* Time-blocks the mission on the calendar; the event's start becomes its due time. */}
+      <OperationDialog
+        open={dialog === "schedule"}
+        onOpenChange={closeDialog}
+        initial={{ title: mission.title, missionId: mission.id }}
+        onSaved={() =>
+          useAlfredStore.getState().say({
+            mood: "encouraging",
+            title: "Time blocked, sir.",
+            message: "It's on the calendar. I'll hold you to it.",
+            actions: [{ label: "Open Operations", href: "/operations" }],
+          })
+        }
+      />
       <AbandonDialog missionId={mission.id} open={dialog === "abandon"} onOpenChange={closeDialog} />
     </div>
   );

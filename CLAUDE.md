@@ -86,7 +86,7 @@ Each feature is built as a vertical slice:
 
 Web conventions:
 - Routes use the Batman names (`/hq`, `/missions`, …), listed once in `lib/nav.ts` (sidebar and header titles) and `lib/routes.ts` (protection). `app/(gotham)/[section]/page.tsx` is a placeholder for any section without a real page; adding `app/(gotham)/<section>/page.tsx` replaces it.
-- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits), `lib/intel-queries.ts` (journal) and `lib/resource-queries.ts` (finance; money and month helpers in `lib/money.ts`).
+- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits), `lib/intel-queries.ts` (journal) and `lib/resource-queries.ts` (finance; money and month helpers in `lib/money.ts`) and `lib/operation-queries.ts` (calendar).
 - Shared form pieces live in `components/forms` (`Field`, `NativeSelect`, `TagInput`, `SubmitButton`, `FormAlert`). The Intel form keeps a local draft every 30 seconds (`components/intel/use-draft.ts`).
 - `StreakGuard` (in the `(gotham)` layout) asks after 8pm, on each navigation, before a streak marked `streak_at_risk` is lost. Dismissals are remembered per day in localStorage. Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
 - The focus screen is `/focus/[sessionId]` in the `(focus)` route group: full screen, with no sidebar, header or Alfred toasts. `QuickStartButton` starts a session and opens it. `stores/focus.ts` holds the running countdown and distraction count, persisted to localStorage.
@@ -127,6 +127,13 @@ API conventions:
   - Alfred posts one over-budget alert per category and month.
   - Recurring transactions are templates: `App\Services\RecurringResources` adds a copy (`recurring_source_id`) for each due date, counting from the template's date. `RecurringTransactionJob` runs it daily from the `scheduler` compose service (`php artisan schedule:work`). Saving a template also catches up right away.
   - Savings goals total the transactions linked to them (`savings_goal_id`, not mass-assignable). `SavingsGoal::recalculate()` keeps `current_amount` and `completed` in step.
+- Operations (calendar), `App\Services\Operations`:
+  - Times are stored in UTC. All-day events are dates with an exclusive end, in and out.
+  - Recurring events (`recurring_rule` {freq, until}) are expanded into occurrences per request; editing or dragging one moves the whole series.
+  - Habits with a `reminder_time` appear read-only.
+  - A timed event linked to a mission sets the mission's `due_time` to its start.
+  - Focus blocks (`kind = focus_block`, only made by `POST /operations/focus-block`) go at the `energy_pattern` peak from `system_intelligence` if there is one, else an hour after `work_start_time`, then to the next free 2 hours.
+  - The web calendar (FullCalendar 6; v7 dropped the separate plugin packages) shows browser-local times and sends instants, so a browser in another timezone than the account still saves what it shows.
 - Dates: stored `date` columns are plain days, but `$user->today()` is midnight in the user's timezone. Compare them as `Y-m-d` strings or with `whereDate()`, never as Carbon instants. Also don't match date columns with `updateOrCreate`/`Rule::unique`: SQLite (the tests) stores them with a time.
 - Intel (journal):
   - One entry per user per day; dates can't be in the future.
