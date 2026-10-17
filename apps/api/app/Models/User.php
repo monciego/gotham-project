@@ -140,6 +140,11 @@ class User extends Authenticatable
             ->withPivot('earned_at');
     }
 
+    public function weeklyReports(): HasMany
+    {
+        return $this->hasMany(WeeklyReport::class);
+    }
+
     public function systemIntelligence(): HasMany
     {
         return $this->hasMany(SystemIntelligence::class);

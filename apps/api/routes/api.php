@@ -10,10 +10,12 @@ use App\Http\Controllers\CaseMilestoneController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FocusSessionController;
 use App\Http\Controllers\HelloController;
+use App\Http\Controllers\InsightController;
 use App\Http\Controllers\IntelController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\MissionDependencyController;
 use App\Http\Controllers\OperationController;
+use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\SavingsGoalController;
 use App\Http\Controllers\SubtaskController;
@@ -158,6 +160,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/cases/{case}/milestones/{milestone}', 'update')->whereNumber(['case', 'milestone']);
         Route::delete('/cases/{case}/milestones/{milestone}', 'destroy')->whereNumber(['case', 'milestone']);
     });
+
+    Route::controller(OverviewController::class)->group(function () {
+        Route::get('/overview', 'index');
+        Route::get('/overview/report', 'report');
+        Route::get('/overview/reports', 'reports');
+    });
+
+    Route::get('/overview/insights', [InsightController::class, 'index']);
+    // Recomputing reads 60 days of everything, so it is rate limited.
+    Route::post('/overview/insights/generate', [InsightController::class, 'generate'])->middleware('throttle:6,1');
 
     Route::get('/alfred-messages', [AlfredMessageController::class, 'index']);
     Route::post('/alfred-messages/{message}/dismiss', [AlfredMessageController::class, 'dismiss'])->whereNumber('message');

@@ -16,16 +16,19 @@ use App\Services\ArsenalStreaks;
 use App\Services\CaseProgress;
 use App\Services\IntelSentiment;
 use App\Services\RecurringResources;
+use App\Services\ReportService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Sample data for the local test user, so HQ has something to show.
  * Re-running it resets that user: XP, trophies, missions, habits, focus sessions, Intel,
- * Resources (transactions, budgets, savings goals), Operations, Cases and messages.
+ * Resources (transactions, budgets, savings goals), Operations, Cases, Overview's
+ * history (60 days of missions, focus and runs, weekly reports, insights) and messages.
  */
 class DemoSeeder extends Seeder
 {
-    public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment, RecurringResources $recurring, CaseProgress $caseProgress): void
+    public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment, RecurringResources $recurring, CaseProgress $caseProgress, ReportService $reports): void
     {
         $user = User::where('email', 'test@example.com')->firstOrFail();
         $user->update(['name' => 'Bruce Wayne', 'work_start_time' => '08:00', 'work_end_time' => '18:00']);
@@ -42,6 +45,9 @@ class DemoSeeder extends Seeder
         $user->budgets()->delete();
         $user->savingsGoals()->delete();
         $user->operations()->delete();
+        $user->weeklyReports()->delete();
+        $user->systemIntelligence()->delete();
+        Cache::forget("alfred-insights:{$user->id}");
 
         $today = $user->today();
 
@@ -164,6 +170,60 @@ class DemoSeeder extends Seeder
 
             $streaks->refresh($habit, $user);
         }
+
+        // Overview's history: 60 days of runs, completed missions and focus sessions, with
+        // more missions on days with a run and more energy in morning sessions, so the
+        // charts have shape and Alfred has patterns to find. Seeded for repeatable output.
+        mt_srand(1007);
+        $run = $user->arsenal()->where('name', 'Morning run')->first();
+        $pool = ['Answer the board\'s questions', 'Sign the Applied Sciences contracts', 'Review the Narrows housing plan',
+            'Inspect the Batmobile', 'Prepare the charity brief', 'Calibrate the cowl sensors', 'Update the rogues gallery files',
+            'Plan the Gotham General donation', 'Meet with Commissioner Gordon', 'Patch the Batcave network'];
+
+        for ($daysAgo = 60; $daysAgo >= 2; $daysAgo--) {
+            $day = $today->subDays($daysAgo);
+            // Days 1-6 are already run (the current streak); day 7 stays missed so it ends there.
+            $ran = $daysAgo <= 6 || ($daysAgo > 7 && mt_rand(1, 100) <= 65);
+            if ($ran && $daysAgo > 6) {
+                ArsenalLog::create([
+                    'arsenal_id' => $run->id, 'user_id' => $user->id, 'date' => $day->toDateString(),
+                    'completed' => true, 'completed_at' => $day->setTime(6, 40)->utc(),
+                ]);
+            }
+
+            $weekend = $day->isWeekend();
+            $count = max(0, mt_rand(0, $weekend ? 1 : 2) + ($ran ? mt_rand(1, 2) : 0));
+            for ($index = 0; $index < $count; $index++) {
+                $priority = ['high', 'medium', 'medium', 'low'][mt_rand(0, 3)];
+                $mission = Mission::factory()->for($user)->create([
+                    'title' => $pool[mt_rand(0, count($pool) - 1)],
+                    'priority' => $priority,
+                    'status' => 'completed',
+                    'due_date' => $day->toDateString(),
+                    // Friday's missions slip the most.
+                    'times_postponed' => $day->dayOfWeekIso === 5 ? mt_rand(1, 3) : (mt_rand(1, 100) <= 15 ? 1 : 0),
+                    'completed_at' => $day->setTime(mt_rand(10, 18), mt_rand(0, 59))->utc(),
+                    'created_at' => $day->subDays(3)->utc(),
+                ]);
+                $mission->forceFill(['xp_awarded' => Mission::XP[$priority]])->save();
+            }
+
+            // Focus follows the missions; mornings start with more energy.
+            foreach (array_slice([9, 14, 16], 0, $weekend ? min(1, $count) : min(3, $count)) as $hour) {
+                $minutes = [25, 50][mt_rand(0, 1)];
+                $startTime = $day->setTime($hour, 0)->utc();
+                FocusSession::factory()->for($user)->create([
+                    'start_time' => $startTime,
+                    'end_time' => $startTime->addMinutes($minutes),
+                    'duration_minutes' => $minutes,
+                    'energy_before' => $hour === 9 ? mt_rand(8, 9) : mt_rand(5, 7),
+                    'xp_awarded' => intdiv($minutes, 25) * 5,
+                ]);
+            }
+        }
+        $streaks->refresh($run, $user);
+        // The history's XP, so the level matches what Overview says was earned.
+        $user->gainXp((int) $user->missions()->sum('xp_awarded') + (int) $user->focusSessions()->sum('xp_awarded'));
 
         // 95 minutes of focus so far today.
         $start = $today->utc()->max(now()->toImmutable()->subMinutes(150));
@@ -294,6 +354,11 @@ class DemoSeeder extends Seeder
         ]);
         $block->kind = 'focus_block';
         $block->save();
+
+        // Four weeks of saved reports for "View previous reports".
+        foreach (range(4, 1) as $weeksAgo) {
+            $reports->store($user, $today->subWeeks($weeksAgo));
+        }
 
         AlfredMessage::factory()->for($user)->create([
             'priority' => 'critical',

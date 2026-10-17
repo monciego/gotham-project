@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\GenerateWeeklyReportsJob;
 use App\Jobs\RecurringTransactionJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -11,3 +12,5 @@ Artisan::command('inspire', function () {
 
 // The `scheduler` service in docker-compose runs `php artisan schedule:work`.
 Schedule::job(new RecurringTransactionJob)->dailyAt('00:00')->withoutOverlapping();
+// Each user's report is saved on Sunday at 11pm in their own timezone, so this checks every hour.
+Schedule::job(new GenerateWeeklyReportsJob)->hourly()->withoutOverlapping();
