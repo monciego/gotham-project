@@ -74,6 +74,8 @@ const lines = {
   caseMark50: ["Halfway there, sir. The case is turning in our favor."],
   caseMark75: ["Three quarters done, sir. The end is in sight."],
   caseMark100: ["Every piece is in place, sir. Shall we close the case?"],
+  insightsEmpty: ["Insufficient data, sir. Keep using Alfred. Patterns will emerge."],
+  overviewError: ["I couldn't gather the numbers, sir. Shall we try again?"],
 } as const;
 
 export type AlfredEvent = keyof typeof lines;

@@ -564,3 +564,65 @@ export type OperationInput = {
   reminder_minutes: number | null;
   mission_id: number | null;
 };
+
+export type OverviewPeriodName = "week" | "month" | "quarter" | "year" | "custom";
+
+/** Dates are Y-m-d in the user's timezone, both ends included. */
+export type OverviewPeriod = { name: OverviewPeriodName; start: string; end: string; days: number };
+
+export type Overview = {
+  period: OverviewPeriod;
+  key_metrics: {
+    total_focus_minutes: number;
+    missions_completed: number;
+    /** The same number of days just before the period. */
+    missions_completed_previous: number;
+    /** Percent; null when the previous period had none. */
+    missions_change: number | null;
+    /** Null when no habit was due. */
+    habit_completion_rate: number | null;
+    active_streaks_count: number;
+    xp_earned: number;
+  };
+  focus_by_day: { date: string; minutes: number }[];
+  /** `week` is the Monday the week starts on. */
+  missions_by_week: { week: string; count: number }[];
+  /** Null on days no habit was due. */
+  habit_heatmap: { date: string; completion_rate: number | null }[];
+  /** Journal days only; energy 1–10. */
+  energy_trend: { date: string; avg_energy: number }[];
+  /** Journal days only; great = 5 … terrible = 1. */
+  mood_trend: { date: string; mood_score: number }[];
+};
+
+export type InsightCategory = "habit" | "mission" | "energy" | "pattern" | "finance";
+
+export type Insight = { key: string; category: InsightCategory; text: string; confidence: number };
+
+export type Insights = { generated_at: string; days: number; insights: Insight[] };
+
+export type WeeklyReport = {
+  week_start: string;
+  week_end: string;
+  /** This week, before Sunday night's report. */
+  in_progress: boolean;
+  metrics: {
+    focus_minutes: number;
+    focus_minutes_previous: number;
+    missions_completed: number;
+    missions_completed_previous: number;
+    habit_completion_rate: number | null;
+    intel_entries: number;
+    average_mood: number | null;
+    average_energy: number | null;
+    xp_earned: number;
+    spent: number;
+    saved: number;
+    earned: number;
+    cases_closed: number;
+  };
+  best_day: { date: string; missions_completed: number; focus_minutes: number } | null;
+  trophies: string[];
+  summary: string;
+  generated_at: string;
+};

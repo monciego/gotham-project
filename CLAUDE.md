@@ -86,7 +86,7 @@ Each feature is built as a vertical slice:
 
 Web conventions:
 - Routes use the Batman names (`/hq`, `/missions`, …), listed once in `lib/nav.ts` (sidebar and header titles) and `lib/routes.ts` (protection). `app/(gotham)/[section]/page.tsx` is a placeholder for any section without a real page; adding `app/(gotham)/<section>/page.tsx` replaces it.
-- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits), `lib/intel-queries.ts` (journal) and `lib/resource-queries.ts` (finance; money and month helpers in `lib/money.ts`), `lib/operation-queries.ts` (calendar) and `lib/case-queries.ts` (cases).
+- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits), `lib/intel-queries.ts` (journal) and `lib/resource-queries.ts` (finance; money and month helpers in `lib/money.ts`), `lib/operation-queries.ts` (calendar), `lib/case-queries.ts` (cases) and `lib/overview-queries.ts` (analytics, insights, weekly reports).
 - Shared form pieces live in `components/forms` (`Field`, `NativeSelect`, `TagInput`, `SubmitButton`, `FormAlert`). The Intel form keeps a local draft every 30 seconds (`components/intel/use-draft.ts`).
 - `StreakGuard` (in the `(gotham)` layout) asks after 8pm, on each navigation, before a streak marked `streak_at_risk` is lost. Dismissals are remembered per day in localStorage. Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
 - The focus screen is `/focus/[sessionId]` in the `(focus)` route group: full screen, with no sidebar, header or Alfred toasts. `QuickStartButton` starts a session and opens it. `stores/focus.ts` holds the running countdown and distraction count, persisted to localStorage.
@@ -141,6 +141,12 @@ API conventions:
   - `completed` is only reached through `POST /cases/{id}/complete`: +500 XP once (`xp_awarded`), Alfred's message, trophies. Setting another status reopens it.
   - On track / behind compares progress with a straight line from start to target, 10 points of grace.
   - `notes` is cleaned with `RichText::clean()`, like Intel.
+- Overview (analytics):
+  - `App\Support\Period` is a run of whole days in the user's timezone (week/month/quarter/year to today, or custom up to 366 days). `App\Services\DailyStats` gives per-day focus, missions, habits, Intel and XP for a period; `Overview`, `AlfredIntelligence` and `ReportService` all build on it.
+  - XP earned is summed from each feature's `xp_awarded` plus trophy XP by `earned_at`; there is no XP ledger.
+  - `AlfredIntelligence` reads the last 60 whole days, caches its insights for a day (`alfred-insights:{id}`), and replaces its patterns in `system_intelligence`, removing those that no longer hold. `energy_pattern.peak_hour` (from `energy_before` on focus sessions) is what focus blocks use.
+  - Postponements aren't logged, so the postponement insight groups missions by their current due date.
+  - Weekly reports run Monday to Sunday. `GenerateWeeklyReportsJob` runs hourly and saves each user's on Sunday at 11pm in their timezone (`weekly_reports`). `GET /overview/report` builds one live; a week still under way is compared with the same days of the week before.
 - Dates: stored `date` columns are plain days, but `$user->today()` is midnight in the user's timezone. Compare them as `Y-m-d` strings or with `whereDate()`, never as Carbon instants. Also don't match date columns with `updateOrCreate`/`Rule::unique`: SQLite (the tests) stores them with a time.
 - Intel (journal):
   - One entry per user per day; dates can't be in the future.
