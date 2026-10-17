@@ -9,5 +9,7 @@ fi
 [ -f vendor/autoload.php ] || composer install --no-interaction
 [ -f .env ] || cp .env.example .env
 grep -Eq '^APP_KEY=.+' .env || php artisan key:generate
+# Serves uploaded avatars at APP_URL/storage
+[ -e public/storage ] || php artisan storage:link
 
 exec "$@"
