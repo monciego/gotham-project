@@ -9,6 +9,7 @@ use App\Models\FocusSession;
 use App\Models\Mission;
 use App\Models\User;
 use App\Services\Achievements;
+use App\Services\CaseProgress;
 use App\Services\FocusSessions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,6 +27,7 @@ class MissionController extends Controller
     public function __construct(
         private Achievements $achievements,
         private FocusSessions $focus,
+        private CaseProgress $caseProgress,
     ) {}
 
     /**
@@ -93,7 +95,7 @@ class MissionController extends Controller
     public function store(MissionRequest $request): JsonResponse
     {
         $mission = $request->user()->missions()->create($request->validated());
-        $mission->case?->recalculateProgress();
+        $this->caseProgress->recalculate($mission->case);
 
         return $this->success(new MissionResource($mission->refresh()), 'Mission created.', 201);
     }
@@ -136,9 +138,9 @@ class MissionController extends Controller
         }
 
         if ($model->wasChanged(['case_id', 'status'])) {
-            $model->case?->recalculateProgress();
+            $this->caseProgress->recalculate($model->case);
             if ($oldCase?->isNot($model->case)) {
-                $oldCase->recalculateProgress();
+                $this->caseProgress->recalculate($oldCase);
             }
         }
 
@@ -149,7 +151,7 @@ class MissionController extends Controller
     {
         $model = $this->find($request->user(), $mission);
         $model->delete();
-        $model->case?->recalculateProgress();
+        $this->caseProgress->recalculate($model->case);
 
         return $this->success(message: 'Mission deleted.');
     }
@@ -161,9 +163,10 @@ class MissionController extends Controller
         $levelBefore = $user->current_level;
         $xp = 0;
         $trophies = collect();
+        $caseMilestone = null;
 
         if ($model->status !== 'completed') {
-            DB::transaction(function () use ($user, $model, &$xp, &$trophies) {
+            DB::transaction(function () use ($user, $model, &$xp, &$trophies, &$caseMilestone) {
                 $model->update(['status' => 'completed', 'completed_at' => now(), 'abandon_reason' => null]);
                 // The work is done, so a running session counts as completed.
                 $model->focusSessions()->running()->get()
@@ -176,7 +179,7 @@ class MissionController extends Controller
                     $user->gainXp($xp);
                 }
 
-                $model->case?->recalculateProgress();
+                $caseMilestone = $this->caseProgress->recalculate($model->case);
                 $trophies = $this->achievements->check($user);
             });
         }
@@ -190,6 +193,12 @@ class MissionController extends Controller
             'current_level' => $user->current_level,
             'level_up' => $user->current_level > $levelBefore,
             'achievements' => EarnedTrophyResource::collection($trophies->values()),
+            // Set when this completion carried its case past 25, 50, 75 or 100%.
+            'case_milestone' => $caseMilestone === null ? null : [
+                'case_id' => $model->case->id,
+                'name' => $model->case->name,
+                'milestone' => $caseMilestone,
+            ],
         ], 'Well done, sir. Gotham is a little safer tonight.');
     }
 
@@ -202,7 +211,7 @@ class MissionController extends Controller
         $model->update(['status' => 'abandoned', 'abandon_reason' => $validated['reason']]);
         $model->focusSessions()->running()->get()
             ->each(fn (FocusSession $session) => $session->finish(completed: false));
-        $model->case?->recalculateProgress();
+        $this->caseProgress->recalculate($model->case);
 
         return $this->success(new MissionResource($this->detailed($request->user(), $mission)), 'Mission abandoned.');
     }

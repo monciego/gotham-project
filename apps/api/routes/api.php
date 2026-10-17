@@ -6,6 +6,7 @@ use App\Http\Controllers\ArsenalController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CaseController;
+use App\Http\Controllers\CaseMilestoneController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FocusSessionController;
 use App\Http\Controllers\HelloController;
@@ -140,7 +141,23 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/operations/{operation}', 'destroy')->whereNumber('operation');
     });
 
-    Route::get('/cases', [CaseController::class, 'index']);
+    Route::controller(CaseController::class)->group(function () {
+        Route::get('/cases', 'index');
+        Route::post('/cases', 'store');
+        Route::get('/cases/{case}', 'show')->whereNumber('case');
+        Route::put('/cases/{case}', 'update')->whereNumber('case');
+        Route::delete('/cases/{case}', 'destroy')->whereNumber('case');
+        Route::post('/cases/{case}/complete', 'complete')->whereNumber('case');
+        Route::patch('/cases/{case}/progress', 'updateProgress')->whereNumber('case');
+        Route::get('/cases/{case}/analytics', 'analytics')->whereNumber('case');
+    });
+
+    Route::controller(CaseMilestoneController::class)->group(function () {
+        Route::get('/cases/{case}/milestones', 'index')->whereNumber('case');
+        Route::post('/cases/{case}/milestones', 'store')->whereNumber('case');
+        Route::put('/cases/{case}/milestones/{milestone}', 'update')->whereNumber(['case', 'milestone']);
+        Route::delete('/cases/{case}/milestones/{milestone}', 'destroy')->whereNumber(['case', 'milestone']);
+    });
 
     Route::get('/alfred-messages', [AlfredMessageController::class, 'index']);
     Route::post('/alfred-messages/{message}/dismiss', [AlfredMessageController::class, 'dismiss'])->whereNumber('message');

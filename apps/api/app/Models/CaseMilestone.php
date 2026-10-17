@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['name', 'target_date', 'completed', 'completed_at'])]
 class CaseMilestone extends Model
 {
+    protected $attributes = ['completed' => false];
+
     protected function casts(): array
     {
         return [

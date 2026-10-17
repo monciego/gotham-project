@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\AlfredMessage;
 use App\Models\Arsenal;
 use App\Models\ArsenalLog;
+use App\Models\CaseFile;
 use App\Models\FocusSession;
 use App\Models\Intel;
 use App\Models\Mission;
@@ -12,6 +13,7 @@ use App\Models\Operation;
 use App\Models\Resource;
 use App\Models\User;
 use App\Services\ArsenalStreaks;
+use App\Services\CaseProgress;
 use App\Services\IntelSentiment;
 use App\Services\RecurringResources;
 use Illuminate\Database\Seeder;
@@ -19,11 +21,11 @@ use Illuminate\Database\Seeder;
 /**
  * Sample data for the local test user, so HQ has something to show.
  * Re-running it resets that user: XP, trophies, missions, habits, focus sessions, Intel,
- * Resources (transactions, budgets, savings goals), Operations and messages.
+ * Resources (transactions, budgets, savings goals), Operations, Cases and messages.
  */
 class DemoSeeder extends Seeder
 {
-    public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment, RecurringResources $recurring): void
+    public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment, RecurringResources $recurring, CaseProgress $caseProgress): void
     {
         $user = User::where('email', 'test@example.com')->firstOrFail();
         $user->update(['name' => 'Bruce Wayne', 'work_start_time' => '08:00', 'work_end_time' => '18:00']);
@@ -31,6 +33,7 @@ class DemoSeeder extends Seeder
         $user->achievements()->detach();
 
         $user->missions()->withTrashed()->forceDelete();
+        $user->cases()->withTrashed()->forceDelete();
         $user->arsenal()->withTrashed()->forceDelete();
         $user->focusSessions()->delete();
         $user->alfredMessages()->delete();
@@ -63,6 +66,69 @@ class DemoSeeder extends Seeder
                 'completed_at' => $status === 'completed' ? now() : null,
             ]);
         }
+
+        // Cases: [name, category, status, started (days ago), target (days ahead), mode, color, missions by title,
+        // earlier missions already done (days ago), [days ago => progress] history]
+        $cases = [
+            ['Wayne Enterprises Q4 turnaround', 'Business', 'active', 28, 45, 'auto', 'blue',
+                ['Finish the quarterly report', 'Call Lucius about the R&D budget'],
+                ['Draft the Q4 targets' => 20, 'Meet the division heads' => 12], [21 => 0, 20 => 33, 12 => 50]],
+            ['Wayne Foundation grants', 'Philanthropy', 'active', 30, 4, 'auto', 'teal',
+                ['Review Wayne Foundation grant applications'], [], [30 => 0]],
+            ['Arkham security overhaul', 'Gotham', 'on_hold', 40, 60, 'manual', 'purple', ['Read the Arkham security audit'], [], [40 => 0, 30 => 20, 14 => 40]],
+            ['Rebuild the Batcave', 'Personal', 'planning', 0, null, 'auto', 'gray', [], [], []],
+            ['The Falcone investigation', 'Gotham', 'completed', 90, null, 'auto', 'red', [],
+                ['Trace the shipping manifests' => 70, 'Turn Carmine Falcone in' => 50], [90 => 0, 70 => 50, 50 => 100]],
+        ];
+
+        foreach ($cases as [$name, $category, $status, $startedAgo, $targetAhead, $mode, $color, $linked, $earlier, $history]) {
+            $case = $user->cases()->create([
+                'name' => $name,
+                'category' => $category,
+                'status' => $status,
+                'start_date' => $today->subDays($startedAgo)->toDateString(),
+                'target_end_date' => $targetAhead === null ? null : $today->addDays($targetAhead)->toDateString(),
+                'actual_end_date' => $status === 'completed' ? $today->subDays(50)->toDateString() : null,
+                'progress_mode' => $mode,
+                'progress' => $mode === 'manual' ? 40 : 0,
+                'color' => $color,
+                'tags' => [strtolower($category)],
+                'description' => "Everything it takes to see {$name} through.",
+                'notes' => '<p>Alfred keeps the case file here.</p><ul><li><p>Who is involved</p></li><li><p>What we know</p></li></ul>',
+            ]);
+            $case->forceFill(['xp_awarded' => $status === 'completed' ? CaseFile::XP : 0])->save();
+
+            $user->missions()->whereIn('title', $linked)->update(['case_id' => $case->id]);
+            foreach ($earlier as $title => $daysAgo) {
+                Mission::factory()->for($user)->create([
+                    'case_id' => $case->id,
+                    'title' => $title,
+                    'status' => 'completed',
+                    'due_date' => $today->subDays($daysAgo)->toDateString(),
+                    'completed_at' => $today->subDays($daysAgo)->addHours(15)->utc(),
+                    'created_at' => $today->subDays($startedAgo)->utc(),
+                ]);
+            }
+
+            foreach ($history as $daysAgo => $progress) {
+                $case->progressLogs()->create(['date' => $today->subDays($daysAgo)->toDateString(), 'progress' => $progress]);
+            }
+
+            $caseProgress->recalculate($case);
+            $caseProgress->snapshot($case);
+            // Celebrations already happened in the story; don't fill HQ with them.
+            $user->alfredMessages()->where('title', 'like', "{$name}:%")->delete();
+        }
+
+        $user->cases()->where('name', 'Wayne Foundation grants')->first()->milestones()->createMany([
+            ['name' => 'Shortlist applicants', 'target_date' => $today->subDays(10)->toDateString(), 'completed' => true, 'completed_at' => $today->subDays(11)->utc()],
+            ['name' => 'Board vote', 'target_date' => $today->addDays(4)->toDateString()],
+        ]);
+        $user->cases()->where('name', 'Wayne Enterprises Q4 turnaround')->first()->milestones()->createMany([
+            ['name' => 'Q4 targets signed off', 'target_date' => $today->subDays(18)->toDateString(), 'completed' => true, 'completed_at' => $today->subDays(19)->utc()],
+            ['name' => 'Quarterly report to the board', 'target_date' => $today->addDays(3)->toDateString()],
+            ['name' => 'Year-end review', 'target_date' => $today->addDays(45)->toDateString()],
+        ]);
 
         // [name, category, type, frequency, target, unit, days completed before today (1 = yesterday)]
         $habits = [
