@@ -29,7 +29,7 @@ Use the Batman names in UI copy, routes, models and endpoints:
 
 pnpm + Turborepo monorepo:
 
-- `apps/api`: Laravel, a pure REST API under `/api`, authenticated with Sanctum personal access tokens (bearer). Runs on port 8000 in Docker only; Turbo and pnpm don't manage it. PHP dependencies are managed by Composer.
+- `apps/api`: Laravel, a pure REST API under `/api/v1`, authenticated with Sanctum personal access tokens (bearer). Runs on port 8000 in Docker only; Turbo and pnpm don't manage it. PHP dependencies are managed by Composer.
 - `apps/web`: Next.js 16 App Router + TypeScript on port 3000. This is the product.
 - `apps/docs`: Next.js scaffold on port 3001.
 - `packages/ui` (`@gotham/ui`): shared shadcn components, `cn()`, and the Gotham Tailwind theme.
@@ -78,6 +78,14 @@ Each feature is built as a vertical slice:
 
 - **API:** migration, model, factory, form requests, API resource, policy, controller, `Route::apiResource`, and a feature test.
 - **Web:** TanStack Query hooks, pages under the `app/(gotham)/` route group, and React Hook Form + Zod forms.
+
+API conventions:
+- Every response uses the envelope `{success, message, data, errors}`. Controllers return `$this->success()` / `$this->error()` from `App\Http\Concerns\ApiResponse` (used by the base `Controller`). Exceptions on `api/*` routes are rendered in the same envelope in `bootstrap/app.php`, including validation (422), auth (401) and 404 errors.
+- Routes in `routes/api.php` get the `/api/v1` prefix from `apiPrefix` in `bootstrap/app.php`.
+- Model names that differ from their table: `CaseFile` → `cases` (`case` is reserved in PHP), `Arsenal` → `arsenal`, `Intel` → `intel`, `SystemIntelligence` → `system_intelligence`. `UserAchievement` is the `user_achievements` pivot.
+- Models use `#[Fillable]`/`#[Table]` attributes and classic `scopeX()` methods. Don't use `#[Scope]`: several scopes share a column name (`active`, `completed`), and Laravel can then mistake the method for a relationship.
+- Enum columns are plain strings. The allowed values are in the migrations.
+- Trophy definitions live in `AchievementsSeeder`. It matches rows on `key`, so it is safe to re-run.
 
 Missions belong to Cases. HQ and Overview aggregate the other features. Streaks and trophies are computed on the API side, and trophies are awarded by queued jobs.
 

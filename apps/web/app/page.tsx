@@ -20,7 +20,7 @@ const ThemeImage = (props: Props) => {
 
 async function getMessage() {
   try {
-    const response = await fetch("http://localhost:8080/api/hello");
+    const response = await fetch(`${process.env.API_INTERNAL_URL}/api/v1/hello`);
 
     if (!response.ok) {
       throw new Error(`API returned ${response.status}`);
