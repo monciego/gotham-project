@@ -10,11 +10,17 @@ export type AlfredToast = {
   actions: AlfredAction[];
 };
 
+/** The "I'm stuck, Alfred" help, with the mission Alfred suggests starting on. */
+export type AlfredHelp = { mission: { id: number; title: string } | null };
+
 type AlfredState = {
   toast: AlfredToast | null;
+  help: AlfredHelp | null;
   /** Alfred's panel, bottom-right, from anywhere in the app. Hides itself after a while. */
   say: (toast: Omit<AlfredToast, "key" | "actions"> & { actions?: AlfredAction[] }) => void;
   dismiss: () => void;
+  openHelp: (mission: AlfredHelp["mission"]) => void;
+  closeHelp: () => void;
 };
 
 const HIDE_AFTER_MS = 8000;
@@ -22,6 +28,7 @@ let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
 export const useAlfredStore = create<AlfredState>()((set) => ({
   toast: null,
+  help: null,
   say: (toast) => {
     clearTimeout(hideTimer);
     set({ toast: { actions: [], ...toast, key: `${Date.now()}` } });
@@ -31,4 +38,6 @@ export const useAlfredStore = create<AlfredState>()((set) => ({
     clearTimeout(hideTimer);
     set({ toast: null });
   },
+  openHelp: (mission) => set({ help: { mission } }),
+  closeHelp: () => set({ help: null }),
 }));

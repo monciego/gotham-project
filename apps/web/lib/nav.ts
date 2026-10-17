@@ -30,6 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
 const MENU_PAGES: Record<string, string> = {
   "/profile": "Profile",
   "/settings": "Settings",
+  "/alfred": "Alfred",
 };
 
 export function isActive(pathname: string, href: string): boolean {

@@ -3,11 +3,9 @@
 import { Button } from "@gotham/ui/components/ui/button";
 import { say } from "@/lib/alfred";
 import { celebrate } from "@/lib/celebrate";
-import { useActOnAlert, useDashboard, useDismissAlert } from "@/lib/queries";
+import { useDashboard } from "@/lib/queries";
 import type { HabitToday } from "@/lib/types";
 import { useAlfredStore } from "@/stores/alfred";
-import { AlertCards } from "./alert-cards";
-import { AlfredPanel } from "@/components/alfred/alfred-panel";
 import { HqSkeleton } from "./hq-skeleton";
 import { MorningBrief } from "./morning-brief";
 import { StatCards } from "./stat-cards";
@@ -18,10 +16,7 @@ const MILESTONE_LINES = { 7: "streak7", 30: "streak30", 100: "streak100" } as co
 
 export function HqDashboard() {
   const { data, isPending, isError, refetch } = useDashboard();
-  const dismiss = useDismissAlert();
-  const act = useActOnAlert();
   const alfredSays = useAlfredStore((state) => state.say);
-  const toast = useAlfredStore((state) => state.toast);
 
   if (isPending) {
     return <HqSkeleton />;
@@ -48,19 +43,9 @@ export function HqDashboard() {
     });
   }
 
-  // The first critical alert gets Alfred's panel and the rest are cards.
-  // While Alfred is saying something else (a toast), the critical alert waits.
-  const critical = data.alfred_alerts.find((alert) => alert.priority === "critical");
-  const cards = data.alfred_alerts.filter((alert) => alert !== critical);
-
+  // Alfred's messages show on every page (AlfredAlerts and AlfredHost in the layout).
   return (
     <div className="grid gap-6">
-      {cards.length > 0 && (
-        <div>
-          <AlertCards alerts={cards} />
-        </div>
-      )}
-
       <MorningBrief dashboard={data} onMilestone={handleMilestone} />
       <StatCards stats={data.stats} />
 
@@ -68,12 +53,6 @@ export function HqDashboard() {
         <TodaysMissions missions={data.todays_missions} />
         <TodaysArsenal habits={data.todays_arsenal} onMilestone={handleMilestone} />
       </div>
-
-      <AlfredPanel
-        message={critical && !toast ? { ...critical, key: `alert-${critical.id}` } : null}
-        onDismiss={() => critical && dismiss.mutate(critical.id)}
-        onAction={() => critical && act.mutate(critical.id)}
-      />
     </div>
   );
 }

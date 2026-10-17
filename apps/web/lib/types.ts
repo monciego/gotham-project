@@ -325,17 +325,47 @@ export type HabitInput = {
 
 export type AlfredMood = "concerned" | "proud" | "disappointed" | "encouraging";
 
-export type AlfredAction = { label: string; href?: string };
+/**
+ * A link (`href`), or an `action` the API runs (POST /alfred/messages/{id}/action):
+ * show_help, start_mission, force_start:{mission}, abandon:{mission},
+ * complete_habit:{habit}, break_streak, switch_mode:{mode}, dismiss.
+ */
+export type AlfredAction = {
+  label: string;
+  href?: string;
+  action?: string;
+  variant?: "primary" | "secondary" | "danger" | "ghost";
+};
+
+/** What the web does after an action ran. */
+export type AlfredActionResult =
+  | { type: "redirect"; to: string }
+  | { type: "toast"; title: string; message: string }
+  | { type: "help"; mission: { id: number; title: string } | null }
+  | { type: "none" };
+
+export type AlfredMessageType =
+  | "no_start"
+  | "task_avoidance"
+  | "streak_danger"
+  | "session_complete"
+  | "burnout_detected"
+  | "case_closed"
+  | "achievement_unlocked";
 
 export type AlfredMessage = {
   id: number;
+  /** Null for free-form messages. */
+  type: AlfredMessageType | null;
   priority: Priority;
   mood: AlfredMood;
   title: string;
   message: string;
   actions: AlfredAction[];
   requires_action: boolean;
+  action_taken: boolean;
   read_at: string | null;
+  dismissed_at: string | null;
   created_at: string;
 };
 
@@ -358,7 +388,6 @@ export type Dashboard = {
   };
   todays_missions: Mission[];
   todays_arsenal: HabitToday[];
-  alfred_alerts: AlfredMessage[];
 };
 
 

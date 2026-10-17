@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import type {
-  AlfredMessage,
   ApiEnvelope,
   Dashboard,
   HabitCheckIn,
@@ -12,6 +11,7 @@ import type {
 export const queryKeys = {
   me: ["me"],
   dashboard: ["dashboard"],
+  // Alfred's messages (lib/alfred-queries.ts).
   alerts: ["alfred-messages"],
 } as const;
 
@@ -32,14 +32,6 @@ export function useDashboard() {
   return useQuery({
     queryKey: queryKeys.dashboard,
     queryFn: () => get<Dashboard>("/dashboard"),
-  });
-}
-
-export function useUnreadAlerts() {
-  return useQuery({
-    queryKey: queryKeys.alerts,
-    queryFn: () => get<{ messages: AlfredMessage[]; unread_count: number }>("/alfred-messages"),
-    refetchInterval: 60_000,
   });
 }
 
@@ -96,34 +88,3 @@ export function useToggleHabit() {
   });
 }
 
-function useAlertMutation(action: "dismiss" | "act") {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: number) => api.post(`/alfred-messages/${id}/${action}`),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard });
-      const previous = queryClient.getQueryData<Dashboard>(queryKeys.dashboard);
-      queryClient.setQueryData<Dashboard>(
-        queryKeys.dashboard,
-        (dashboard) =>
-          dashboard && {
-            ...dashboard,
-            alfred_alerts: dashboard.alfred_alerts.filter((alert) => alert.id !== id),
-          },
-      );
-      return { previous };
-    },
-    onError: (_error, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKeys.dashboard, context.previous);
-      }
-    },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.alerts }),
-  });
-}
-
-export const useDismissAlert = () => useAlertMutation("dismiss");
-
-/** The user followed one of the alert's actions. */
-export const useActOnAlert = () => useAlertMutation("act");

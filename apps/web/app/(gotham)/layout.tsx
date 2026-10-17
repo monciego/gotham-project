@@ -1,4 +1,4 @@
-import { StreakGuard } from "@/components/arsenal/streak-guard";
+import { AlfredAlerts } from "@/components/alfred/alfred-alerts";
 import { ProgressCelebration } from "@/components/cases/progress-celebration";
 import { RewardsHost } from "@/components/trophies/rewards-host";
 import { Providers } from "@/components/providers";
@@ -13,10 +13,12 @@ export default function GothamLayout({ children }: { children: React.ReactNode }
       {/* Matches the sidebar: icon-only (4rem) on small screens, 256px from md up. */}
       <div className="min-h-svh pl-16 md:pl-64">
         <Header />
-        <main className="mx-auto max-w-6xl p-4 md:p-8">{children}</main>
+        <main className="mx-auto max-w-6xl p-4 md:p-8">
+          <AlfredAlerts />
+          {children}
+        </main>
       </div>
       <AlfredHost />
-      <StreakGuard />
       <ProgressCelebration />
       <RewardsHost />
     </Providers>

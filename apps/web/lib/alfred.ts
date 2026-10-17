@@ -35,8 +35,6 @@ const lines = {
   habitNotFound: ["I can't find that habit, sir."],
   habitCreated: ["Added to the Arsenal, sir."],
   skipIntro: ["A deliberate rest is part of training, sir. The streak stays intact."],
-  streakDanger: ["STREAK IN DANGER"],
-  streakProtected: ["Streak protected, sir."],
   // Streak milestones. Weekly habits reach them too, so no "days".
   streak7: ["Seven in a row, sir. That's no longer luck. That's discipline."],
   streak30: ["Thirty in a row, sir. Gotham will notice the difference."],
