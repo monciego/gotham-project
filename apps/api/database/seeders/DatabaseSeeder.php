@@ -17,11 +17,14 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(AchievementsSeeder::class);
 
-        // User::factory(10)->create();
+        // Sign in locally as test@example.com / password.
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            User::factory()->make(['name' => 'Bruce Wayne'])->only(['name', 'password', 'email_verified_at']),
+        );
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        if (app()->environment('local')) {
+            $this->call(DemoSeeder::class);
+        }
     }
 }

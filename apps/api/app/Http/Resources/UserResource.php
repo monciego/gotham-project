@@ -30,6 +30,7 @@ class UserResource extends JsonResource
             'work_end_time' => $this->work_end_time,
             'alfred_aggressiveness' => $this->alfred_aggressiveness,
             'onboarding_completed' => $this->onboarding_completed,
+            'daily_focus_goal_minutes' => $this->focusGoalMinutes(),
             'created_at' => $this->created_at,
         ];
     }

@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\AlfredMessageController;
+use App\Http\Controllers\ArsenalCompletionController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HelloController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,4 +26,15 @@ Route::prefix('auth')->group(function () {
         Route::put('/password', [AuthController::class, 'updatePassword']);
         Route::delete('/account', [AuthController::class, 'deleteAccount']);
     });
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    Route::post('/arsenal/{arsenal}/complete', [ArsenalCompletionController::class, 'store'])->whereNumber('arsenal');
+    Route::delete('/arsenal/{arsenal}/complete', [ArsenalCompletionController::class, 'destroy'])->whereNumber('arsenal');
+
+    Route::get('/alfred-messages', [AlfredMessageController::class, 'index']);
+    Route::post('/alfred-messages/{message}/dismiss', [AlfredMessageController::class, 'dismiss'])->whereNumber('message');
+    Route::post('/alfred-messages/{message}/act', [AlfredMessageController::class, 'act'])->whereNumber('message');
 });

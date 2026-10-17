@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -25,12 +26,15 @@ use Laravel\Sanctum\HasApiTokens;
     'work_end_time',
     'alfred_aggressiveness',
     'onboarding_completed',
+    'daily_focus_goal_minutes',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
+
+    public const DEFAULT_FOCUS_GOAL_MINUTES = 240;
 
     /**
      * Get the attributes that should be cast.
@@ -46,7 +50,19 @@ class User extends Authenticatable
             'current_level' => 'integer',
             'notification_preferences' => 'array',
             'onboarding_completed' => 'boolean',
+            'daily_focus_goal_minutes' => 'integer',
         ];
+    }
+
+    public function focusGoalMinutes(): int
+    {
+        return $this->daily_focus_goal_minutes ?? self::DEFAULT_FOCUS_GOAL_MINUTES;
+    }
+
+    /** Midnight today in the user's timezone. */
+    public function today(): CarbonImmutable
+    {
+        return CarbonImmutable::now($this->timezone)->startOfDay();
     }
 
     public function missions(): HasMany
