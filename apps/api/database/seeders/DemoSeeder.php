@@ -8,6 +8,7 @@ use App\Models\ArsenalLog;
 use App\Models\FocusSession;
 use App\Models\Intel;
 use App\Models\Mission;
+use App\Models\Operation;
 use App\Models\Resource;
 use App\Models\User;
 use App\Services\ArsenalStreaks;
@@ -18,14 +19,14 @@ use Illuminate\Database\Seeder;
 /**
  * Sample data for the local test user, so HQ has something to show.
  * Re-running it resets that user: XP, trophies, missions, habits, focus sessions, Intel,
- * Resources (transactions, budgets, savings goals) and messages.
+ * Resources (transactions, budgets, savings goals), Operations and messages.
  */
 class DemoSeeder extends Seeder
 {
     public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment, RecurringResources $recurring): void
     {
         $user = User::where('email', 'test@example.com')->firstOrFail();
-        $user->update(['name' => 'Bruce Wayne']);
+        $user->update(['name' => 'Bruce Wayne', 'work_start_time' => '08:00', 'work_end_time' => '18:00']);
         $user->forceFill(['total_xp' => 0, 'current_level' => 1])->save();
         $user->achievements()->detach();
 
@@ -37,6 +38,7 @@ class DemoSeeder extends Seeder
         $user->resources()->delete();
         $user->budgets()->delete();
         $user->savingsGoals()->delete();
+        $user->operations()->delete();
 
         $today = $user->today();
 
@@ -80,6 +82,7 @@ class DemoSeeder extends Seeder
                 'target_value' => $target,
                 'unit' => $unit,
                 'created_at' => $today->subDays(60)->utc(),
+                'reminder_time' => ['Morning run' => '06:30', 'Meditate' => '21:00', 'Strength training' => '18:00'][$name] ?? null,
             ]);
 
             foreach ($doneDaysAgo as $daysAgo) {
@@ -198,6 +201,33 @@ class DemoSeeder extends Seeder
             }
             $goal->recalculate();
         }
+
+        // Operations: this week's calendar, in the user's timezone.
+        $at = fn (int $days, string $time) => $today->addDays($days)->setTimeFromTimeString($time)->utc();
+        $quarterly = $user->missions()->where('title', 'Finish the quarterly report')->first();
+        foreach ([
+            ['Board meeting', 1, '14:00', '15:30', 'work', 'blue', null, null],
+            ['Lunch with Lucius', 2, '12:30', '13:30', 'work', 'purple', null, null],
+            ['Dinner with Selina', 3, '19:30', '21:30', 'social', 'pink', null, null],
+            ['Training with Dick', -6, '07:00', '08:00', 'health', 'teal', ['freq' => 'weekly', 'until' => null], null],
+            ['Wayne Foundation review', 0, '16:00', '17:00', 'work', 'gray', null, null],
+        ] as [$title, $days, $from, $to, $category, $color, $rule, $mission]) {
+            $user->operations()->create([
+                'title' => $title, 'start_time' => $at($days, $from), 'end_time' => $at($days, $to),
+                'category' => $category, 'color' => $color, 'recurring' => $rule !== null, 'recurring_rule' => $rule,
+                'mission_id' => $mission,
+            ]);
+        }
+        $user->operations()->create([
+            'title' => 'Wayne Foundation gala', 'all_day' => true, 'category' => 'social', 'color' => 'red',
+            'start_time' => $today->addDays(5)->utc(), 'end_time' => $today->addDays(6)->utc(),
+        ]);
+        $block = $user->operations()->make([
+            'title' => Operation::FOCUS_BLOCK_TITLE, 'start_time' => $at(1, '09:00'), 'end_time' => $at(1, '11:00'),
+            'category' => 'work', 'mission_id' => $quarterly?->id,
+        ]);
+        $block->kind = 'focus_block';
+        $block->save();
 
         AlfredMessage::factory()->for($user)->create([
             'priority' => 'critical',

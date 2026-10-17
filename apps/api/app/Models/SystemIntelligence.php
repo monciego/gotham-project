@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * A behaviour pattern Alfred has detected for a user.
+ *
+ * Pattern types read so far:
+ * - energy_pattern: {"peak_hour": 0-23}, the hour the user's energy is
+ *   highest, in their timezone. Focus blocks start there (App\Services\Operations).
  */
 #[Table('system_intelligence')]
 #[Fillable(['pattern_type', 'pattern_data', 'confidence'])]

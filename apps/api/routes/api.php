@@ -12,6 +12,7 @@ use App\Http\Controllers\HelloController;
 use App\Http\Controllers\IntelController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\MissionDependencyController;
+use App\Http\Controllers\OperationController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\SavingsGoalController;
 use App\Http\Controllers\SubtaskController;
@@ -128,6 +129,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/savings-goals/{goal}', 'destroy')->whereNumber('goal');
         Route::post('/savings-goals/{goal}/contributions', 'contribute')->whereNumber('goal');
         Route::delete('/savings-goals/{goal}/contributions/{resource}', 'removeContribution')->whereNumber(['goal', 'resource']);
+    });
+
+    Route::controller(OperationController::class)->group(function () {
+        Route::get('/operations', 'index');
+        Route::post('/operations', 'store');
+        Route::post('/operations/focus-block', 'focusBlock');
+        Route::get('/operations/{operation}', 'show')->whereNumber('operation');
+        Route::put('/operations/{operation}', 'update')->whereNumber('operation');
+        Route::delete('/operations/{operation}', 'destroy')->whereNumber('operation');
     });
 
     Route::get('/cases', [CaseController::class, 'index']);
