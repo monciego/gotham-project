@@ -84,6 +84,13 @@ Each feature is built as a vertical slice:
 - **API:** migration, model, factory, form requests, API resource, policy, controller, `Route::apiResource`, and a feature test.
 - **Web:** TanStack Query hooks, pages under the `app/(gotham)/` route group, and React Hook Form + Zod forms.
 
+Web conventions:
+- Routes use the Batman names (`/hq`, `/missions`, …), listed once in `lib/nav.ts` (sidebar and header titles) and `lib/routes.ts` (protection). `app/(gotham)/[section]/page.tsx` is a placeholder for any section without a real page; adding `app/(gotham)/<section>/page.tsx` replaces it.
+- Query keys and hooks live in `lib/queries.ts`. Mutations update the cache optimistically and roll back on error (see `useToggleHabit`).
+- Loading states are skeletons (`@gotham/ui/components/ui/skeleton`), not spinners. Spinners are only for buttons that submit.
+- Animation uses `motion` (Framer Motion's current package; import from `motion/react`). `Providers` sets `reducedMotion="user"`.
+- When adding shadcn components, check that the generated files import `cn` from `@gotham/ui/lib/utils`. The CLI has produced `from "cn"` here and installed an unrelated npm package called `cn`.
+
 API conventions:
 - Every response uses the envelope `{success, message, data, errors}`. Controllers return `$this->success()` / `$this->error()` from `App\Http\Concerns\ApiResponse` (used by the base `Controller`). Exceptions on `api/*` routes are rendered in the same envelope in `bootstrap/app.php`, including validation (422), auth (401) and 404 errors.
 - Routes in `routes/api.php` get the `/api/v1` prefix from `apiPrefix` in `bootstrap/app.php`.
@@ -91,6 +98,10 @@ API conventions:
 - Models use `#[Fillable]`/`#[Table]` attributes and classic `scopeX()` methods. Don't use `#[Scope]`: several scopes share a column name (`active`, `completed`), and Laravel can then mistake the method for a relationship.
 - Enum columns are plain strings. The allowed values are in the migrations.
 - Trophy definitions live in `AchievementsSeeder`. It matches rows on `key`, so it is safe to re-run.
+- "Today" always means the user's day: use `$user->today()` (a `CarbonImmutable` at midnight in their timezone) and `whereDate()` on date columns. Plain `where('date', …)` breaks on SQLite, which the tests use.
+- Habit schedules (`arsenal.frequency`) and streak rules are documented on the `Arsenal` model. `App\Services\ArsenalStreaks` computes streaks, and both HQ and habit completion go through it.
+- Alfred message `actions` are `[{label, href}]`.
+- `DemoSeeder` (run by `db:seed` in the local environment) gives `test@example.com` / `password` a full HQ. Re-running it resets that user's data.
 
 Missions belong to Cases. HQ and Overview aggregate the other features. Streaks and trophies are computed on the API side, and trophies are awarded by queued jobs.
 

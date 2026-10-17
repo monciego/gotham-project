@@ -23,6 +23,16 @@ const lines = {
   ],
   loggedOut: ["Rest well, sir. Gotham will keep until morning."],
   error: ["Something went wrong on our end, sir. Shall we try again?"],
+  hqError: ["I couldn't reach the cave's systems, sir. Shall we try again?"],
+  noMission: ["Nothing urgent on the docket, sir. A rare quiet day. Use it well."],
+  noMissionsToday: ["No missions due today, sir."],
+  noArsenalToday: ["Nothing in the Arsenal today, sir."],
+  habitSaveFailed: ["That didn't save, sir. Do try again."],
+  // Streak milestones. Weekly habits reach them too, so no "days".
+  streak7: ["Seven in a row, sir. That's no longer luck. That's discipline."],
+  streak30: ["Thirty in a row, sir. Gotham will notice the difference."],
+  streak100: ["One hundred in a row, sir. I confess I'm rather proud."],
+  comingSoon: ["I'm still preparing this part of the cave, sir. It won't be long."],
 } as const;
 
 export type AlfredEvent = keyof typeof lines;
