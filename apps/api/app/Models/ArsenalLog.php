@@ -19,6 +19,7 @@ class ArsenalLog extends Model
             'value' => 'integer',
             'skipped' => 'boolean',
             'completed_at' => 'datetime',
+            'xp_awarded' => 'integer',
         ];
     }
 

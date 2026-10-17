@@ -25,7 +25,7 @@ class DemoSeeder extends Seeder
         $user->achievements()->detach();
 
         $user->missions()->withTrashed()->forceDelete();
-        $user->arsenal()->delete();
+        $user->arsenal()->withTrashed()->forceDelete();
         $user->focusSessions()->delete();
         $user->alfredMessages()->delete();
 
@@ -53,19 +53,19 @@ class DemoSeeder extends Seeder
             ]);
         }
 
-        // [name, type, frequency, target, unit, days completed before today (1 = yesterday)]
+        // [name, category, type, frequency, target, unit, days completed before today (1 = yesterday)]
         $habits = [
-            ['Morning run', 'daily', [], null, null, range(1, 6)],
-            ['No phone after 10pm', 'yes_no', [], null, null, range(1, 29)],
-            ['Read', 'measurable', [], 20, 'pages', range(1, 12)],
-            ['Meditate', 'daily', [], null, null, [2, 3, 4]],
-            ['Strength training', 'specific_days', ['days' => [1, 3, 5]], null, null, [2, 4, 7, 9]],
+            ['Morning run', 'physical', 'daily', [], null, null, range(1, 6)],
+            ['No phone after 10pm', 'mental', 'yes_no', [], null, null, range(1, 29)],
+            ['Read', 'learning', 'measurable', [], 20, 'pages', range(1, 12)],
+            ['Meditate', 'mental', 'daily', [], null, null, [3, 4, 5]],
+            ['Strength training', 'physical', 'specific_days', ['days' => [1, 3, 5]], null, null, [2, 4, 7, 9]],
         ];
 
-        foreach ($habits as [$name, $type, $frequency, $target, $unit, $doneDaysAgo]) {
+        foreach ($habits as [$name, $category, $type, $frequency, $target, $unit, $doneDaysAgo]) {
             $habit = Arsenal::factory()->for($user)->create([
                 'name' => $name,
-                'category' => 'training',
+                'category' => $category,
                 'type' => $type,
                 'frequency' => $frequency,
                 'target_value' => $target,

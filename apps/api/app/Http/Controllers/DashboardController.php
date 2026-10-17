@@ -96,13 +96,12 @@ class DashboardController extends Controller
         $habits = $user->arsenal()->active()->orderBy('created_at')->orderBy('id')->get();
         $logs = $this->streaks->logsFor($habits, $today);
 
-        return $habits->map(function (Arsenal $habit) use ($logs, $today, $user) {
+        return $habits->map(function (Arsenal $habit) use ($logs, $user) {
             $habitLogs = $logs->get($habit->id, collect());
 
-            return [
-                ...$this->streaks->present($habit, $habitLogs, $today, $user->timezone),
-                'due_today' => $this->streaks->isDueToday($habit, $habitLogs, $today, $user->timezone),
-            ];
+            $habit = $this->streaks->present($habit, $habitLogs, $user);
+
+            return [...$habit, 'due_today' => $habit['active_today']];
         });
     }
 

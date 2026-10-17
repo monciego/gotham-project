@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Controllers\AlfredMessageController;
-use App\Http\Controllers\ArsenalCompletionController;
+use App\Http\Controllers\ArsenalCheckInController;
+use App\Http\Controllers\ArsenalController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\DashboardController;
@@ -36,8 +37,22 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
-    Route::post('/arsenal/{arsenal}/complete', [ArsenalCompletionController::class, 'store'])->whereNumber('arsenal');
-    Route::delete('/arsenal/{arsenal}/complete', [ArsenalCompletionController::class, 'destroy'])->whereNumber('arsenal');
+    Route::controller(ArsenalController::class)->group(function () {
+        Route::get('/arsenal', 'index');
+        Route::post('/arsenal', 'store');
+        Route::get('/arsenal/today', 'today');
+        Route::get('/arsenal/{arsenal}', 'show')->whereNumber('arsenal');
+        Route::put('/arsenal/{arsenal}', 'update')->whereNumber('arsenal');
+        Route::delete('/arsenal/{arsenal}', 'destroy')->whereNumber('arsenal');
+        Route::get('/arsenal/{arsenal}/logs', 'logs')->whereNumber('arsenal');
+    });
+
+    Route::controller(ArsenalCheckInController::class)->group(function () {
+        Route::post('/arsenal/{arsenal}/complete', 'complete')->whereNumber('arsenal');
+        Route::post('/arsenal/{arsenal}/skip', 'skip')->whereNumber('arsenal');
+        // Undoes today's check-in, completed or skipped.
+        Route::delete('/arsenal/{arsenal}/complete', 'undo')->whereNumber('arsenal');
+    });
 
     Route::controller(MissionController::class)->group(function () {
         Route::get('/missions', 'index');

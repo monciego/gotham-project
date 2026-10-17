@@ -19,7 +19,7 @@ class ArsenalFactory extends Factory
         return [
             'user_id' => User::factory(),
             'name' => ucfirst(fake()->words(2, true)),
-            'category' => fake()->randomElement(['health', 'mind', 'work']),
+            'category' => fake()->randomElement(Arsenal::CATEGORIES),
             'type' => 'daily',
             'frequency' => [],
             'active' => true,
