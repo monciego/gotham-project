@@ -53,7 +53,7 @@ Auth flow (the Sanctum token lives only in the httpOnly `gotham_token` cookie, s
 ## Commands
 
 ```sh
-make dev        # docker compose up: api :8000, web :3000, postgres :5432, redis :6379
+make dev        # docker compose up: api :8000, web :3000, postgres :5432, redis :6379, scheduler
 make down
 make fresh      # down -v + rebuild; wipes the database
 make api        # bash inside the api container
@@ -86,7 +86,7 @@ Each feature is built as a vertical slice:
 
 Web conventions:
 - Routes use the Batman names (`/hq`, `/missions`, …), listed once in `lib/nav.ts` (sidebar and header titles) and `lib/routes.ts` (protection). `app/(gotham)/[section]/page.tsx` is a placeholder for any section without a real page; adding `app/(gotham)/<section>/page.tsx` replaces it.
-- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits) and `lib/intel-queries.ts` (journal).
+- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits), `lib/intel-queries.ts` (journal) and `lib/resource-queries.ts` (finance; money and month helpers in `lib/money.ts`).
 - Shared form pieces live in `components/forms` (`Field`, `NativeSelect`, `TagInput`, `SubmitButton`, `FormAlert`). The Intel form keeps a local draft every 30 seconds (`components/intel/use-draft.ts`).
 - `StreakGuard` (in the `(gotham)` layout) asks after 8pm, on each navigation, before a streak marked `streak_at_risk` is lost. Dismissals are remembered per day in localStorage. Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
 - The focus screen is `/focus/[sessionId]` in the `(focus)` route group: full screen, with no sidebar, header or Alfred toasts. `QuickStartButton` starts a session and opens it. `stores/focus.ts` holds the running countdown and distraction count, persisted to localStorage.
@@ -121,6 +121,13 @@ API conventions:
   - A mission's `actual_minutes` is the sum of its completed sessions.
   - Completing a mission completes its running session; abandoning a mission abandons it.
 - Moving a mission's `due_date` later increments `times_postponed`; at 3, Alfred posts a "break it down" alert.
+- Resources (finance), `App\Services\Finance`:
+  - Amounts are USD.
+  - Budgets are per category and month. A month without budgets of its own uses the latest earlier month's (`carried_over`) until some are saved for it.
+  - Alfred posts one over-budget alert per category and month.
+  - Recurring transactions are templates: `App\Services\RecurringResources` adds a copy (`recurring_source_id`) for each due date, counting from the template's date. `RecurringTransactionJob` runs it daily from the `scheduler` compose service (`php artisan schedule:work`). Saving a template also catches up right away.
+  - Savings goals total the transactions linked to them (`savings_goal_id`, not mass-assignable). `SavingsGoal::recalculate()` keeps `current_amount` and `completed` in step.
+- Dates: stored `date` columns are plain days, but `$user->today()` is midnight in the user's timezone. Compare them as `Y-m-d` strings or with `whereDate()`, never as Carbon instants. Also don't match date columns with `updateOrCreate`/`Rule::unique`: SQLite (the tests) stores them with a time.
 - Intel (journal):
   - One entry per user per day; dates can't be in the future.
   - `content` is HTML from the web editor, cleaned by `App\Support\RichText::clean()` (basic tags, no attributes) before saving. The web renders it as-is, so never skip the cleaning.

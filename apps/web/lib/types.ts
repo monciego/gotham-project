@@ -337,3 +337,100 @@ export type IntelInsights = {
   average_energy: number | null;
   top_tags: { tag: string; count: number }[];
 };
+
+export type TransactionType = "income" | "expense";
+
+export type RecurringFrequency = "daily" | "weekly" | "monthly" | "yearly";
+
+export type Transaction = {
+  id: number;
+  type: TransactionType;
+  amount: number;
+  category: string;
+  description: string | null;
+  /** Y-m-d. */
+  date: string;
+  account: string | null;
+  /** A template the scheduler copies on each due date. */
+  recurring: boolean;
+  recurring_frequency: RecurringFrequency | null;
+  /** Set on copies made from a recurring template. */
+  recurring_source_id: number | null;
+  savings_goal_id: number | null;
+  created_at: string;
+};
+
+export type TransactionInput = {
+  type: TransactionType;
+  amount: number;
+  category: string;
+  description: string | null;
+  date: string;
+  account: string | null;
+  recurring: boolean;
+  recurring_frequency: RecurringFrequency | null;
+};
+
+export type ResourceSummary = {
+  /** YYYY-MM. */
+  month: string;
+  income: number;
+  expenses: number;
+  net: number;
+  /** This month's expenses, largest first. */
+  by_category: { category: string; amount: number }[];
+  /** The six months up to `month`, oldest first. */
+  history: { month: string; income: number; expenses: number }[];
+};
+
+export type ResourceCategories = Record<TransactionType, string[]>;
+
+export type BudgetRow = {
+  /** Null while carried over from an earlier month and not yet saved for this one. */
+  id: number | null;
+  category: string;
+  monthly_limit: number;
+  spent: number;
+  remaining: number;
+  percentage: number | null;
+};
+
+export type BudgetMonth = {
+  month: string;
+  /** The budgets come from `from`, an earlier month, until saved for this one. */
+  carried_over: boolean;
+  from: string | null;
+  budgets: BudgetRow[];
+  /** Categories spent on this month without a budget. */
+  unbudgeted: { category: string; spent: number }[];
+  total_limit: number;
+  total_spent: number;
+};
+
+export type BudgetRecommendation = { category: string; average: number; suggested: number };
+
+export type SavingsGoal = {
+  id: number;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  /** 0–100. */
+  percentage: number;
+  deadline: string | null;
+  /** Negative once the deadline has passed. */
+  days_left: number | null;
+  /** Where an even pace from creation to the deadline would be today. */
+  expected_amount: number | null;
+  /** Null without a deadline. */
+  on_track: boolean | null;
+  completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+  contributions?: Transaction[];
+};
+
+export type SavingsGoalInput = { name: string; target_amount: number; deadline: string | null };
+
+export type Contribution =
+  | { resource_id: number }
+  | { amount: number; date?: string; account?: string | null; description?: string | null };

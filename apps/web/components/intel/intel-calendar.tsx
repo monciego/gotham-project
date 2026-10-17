@@ -6,17 +6,11 @@ import { cn } from "@gotham/ui/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { type IntelFilters, useIntelMonth } from "@/lib/intel-queries";
+import { shiftMonth } from "@/lib/money";
 import { moodOf } from "./moods";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_TITLE = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
-
-/** "2026-10" plus or minus months. */
-export function shiftMonth(month: string, by: number): string {
-  const [year, monthNumber] = month.split("-").map(Number) as [number, number];
-  const date = new Date(Date.UTC(year, monthNumber - 1 + by, 1));
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-}
 
 type IntelCalendarProps = {
   month: string;
