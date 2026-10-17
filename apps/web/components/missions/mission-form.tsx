@@ -20,7 +20,7 @@ import { useCases, useCreateMission, useUpdateMission } from "@/lib/mission-quer
 import { useMe } from "@/lib/queries";
 import type { Mission, MissionInput } from "@/lib/types";
 import { ChoicePills } from "./choice-pills";
-import { TagInput } from "./tag-input";
+import { TagInput } from "@/components/forms/tag-input";
 
 const schema = z.object({
   title: z.string().trim().min(1, "Give the mission a name.").max(255),

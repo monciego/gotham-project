@@ -86,7 +86,8 @@ Each feature is built as a vertical slice:
 
 Web conventions:
 - Routes use the Batman names (`/hq`, `/missions`, …), listed once in `lib/nav.ts` (sidebar and header titles) and `lib/routes.ts` (protection). `app/(gotham)/[section]/page.tsx` is a placeholder for any section without a real page; adding `app/(gotham)/<section>/page.tsx` replaces it.
-- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions) and `lib/arsenal-queries.ts` (habits).
+- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions), `lib/arsenal-queries.ts` (habits) and `lib/intel-queries.ts` (journal).
+- Shared form pieces live in `components/forms` (`Field`, `NativeSelect`, `TagInput`, `SubmitButton`, `FormAlert`). The Intel form keeps a local draft every 30 seconds (`components/intel/use-draft.ts`).
 - `StreakGuard` (in the `(gotham)` layout) asks after 8pm, on each navigation, before a streak marked `streak_at_risk` is lost. Dismissals are remembered per day in localStorage. Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
 - The focus screen is `/focus/[sessionId]` in the `(focus)` route group: full screen, with no sidebar, header or Alfred toasts. `QuickStartButton` starts a session and opens it. `stores/focus.ts` holds the running countdown and distraction count, persisted to localStorage.
 - `useAlfredStore().say()` (`stores/alfred.ts`) shows Alfred's panel from anywhere; `AlfredHost` in the `(gotham)` layout renders it. On HQ, a critical alert takes the panel only while no toast is showing.
@@ -120,6 +121,11 @@ API conventions:
   - A mission's `actual_minutes` is the sum of its completed sessions.
   - Completing a mission completes its running session; abandoning a mission abandons it.
 - Moving a mission's `due_date` later increments `times_postponed`; at 3, Alfred posts a "break it down" alert.
+- Intel (journal):
+  - One entry per user per day; dates can't be in the future.
+  - `content` is HTML from the web editor, cleaned by `App\Support\RichText::clean()` (basic tags, no attributes) before saving. The web renders it as-is, so never skip the cleaning.
+  - `App\Services\IntelSentiment` scores the text by keywords, and `IntelAlerts` posts Alfred's burnout and three-negative-days messages, at most once in their window.
+  - Each new entry gives 5 XP (`xp_awarded`), taken back on delete. `GET /intel/prompt` gives a prompt for the day, and `GET /intel/insights` gives the numbers for the list page.
 - `DemoSeeder` (run by `db:seed` in the local environment) gives `test@example.com` / `password` a full HQ. Re-running it resets that user's data.
 
 Missions belong to Cases. HQ and Overview aggregate the other features. Streaks and trophies are computed on the API side, and trophies are awarded by queued jobs.

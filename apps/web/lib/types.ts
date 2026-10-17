@@ -277,3 +277,63 @@ export type Dashboard = {
   alfred_alerts: AlfredMessage[];
 };
 
+
+export type IntelMood = "great" | "good" | "okay" | "bad" | "terrible";
+
+export type IntelEntry = {
+  id: number;
+  /** Y-m-d. */
+  date: string;
+  /** Sanitized HTML from the editor. */
+  content: string;
+  /** The first 100 characters of the text. */
+  excerpt: string;
+  mood: IntelMood;
+  energy_level: number;
+  stress_level: number;
+  gratitude: string | null;
+  wins: string | null;
+  struggles: string | null;
+  tags: string[];
+  sentiment: number | null;
+  sentiment_label: "positive" | "neutral" | "negative" | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type IntelDetail = { entry: IntelEntry; previous_id: number | null; next_id: number | null };
+
+export type IntelFiled = {
+  entry: IntelEntry;
+  xp_awarded: number;
+  total_xp: number;
+  current_level: number;
+  level_up: boolean;
+  achievements: EarnedTrophy[];
+};
+
+export type IntelInput = {
+  date: string;
+  content: string;
+  mood: IntelMood;
+  energy_level: number;
+  stress_level: number;
+  gratitude: string | null;
+  wins: string | null;
+  struggles: string | null;
+  tags: string[];
+};
+
+export type IntelPrompt = { prompt: string; reason: string };
+
+export type IntelInsights = {
+  entries_this_month: number;
+  /** Consecutive days with an entry, up to today or yesterday. */
+  streak: number;
+  mood_average: { score: number; mood: IntelMood } | null;
+  /** The last 7 days, oldest first. */
+  mood_trend: { date: string; mood: IntelMood | null }[];
+  /** Average over the last 7 days. */
+  average_energy: number | null;
+  top_tags: { tag: string; count: number }[];
+};

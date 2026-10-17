@@ -41,3 +41,8 @@ export function formatDateTime(value: string): string {
     minute: "2-digit",
   });
 }
+
+/** Today (Y-m-d) in a timezone, e.g. the user's rather than the server's. */
+export function todayIn(timezone: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date());
+}
