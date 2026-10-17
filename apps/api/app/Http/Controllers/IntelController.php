@@ -6,10 +6,11 @@ use App\Http\Requests\IntelRequest;
 use App\Http\Resources\EarnedTrophyResource;
 use App\Http\Resources\IntelResource;
 use App\Models\Intel;
-use App\Services\Achievements;
+use App\Services\AchievementService;
 use App\Services\IntelAlerts;
 use App\Services\IntelPrompts;
 use App\Services\IntelSentiment;
+use App\Services\Xp;
 use App\Support\RichText;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,7 +28,8 @@ class IntelController extends Controller
         private IntelSentiment $sentiment,
         private IntelAlerts $alerts,
         private IntelPrompts $prompts,
-        private Achievements $achievements,
+        private AchievementService $achievements,
+        private Xp $xp,
     ) {}
 
     /** Newest first. `from` / `to` are Y-m-d; `search` looks in the text and tags. */
@@ -75,11 +77,11 @@ class IntelController extends Controller
             $this->fill($entry, $request);
             // Not mass-assignable, so requests can't set it.
             $entry->forceFill(['xp_awarded' => Intel::XP])->save();
-            $user->gainXp(Intel::XP);
+            $this->xp->award($user, Intel::XP, 'journal_save', "Intel for {$entry->date->toFormattedDateString()}");
 
             $this->alerts->check($user, $entry);
 
-            return [$entry, $this->achievements->check($user)];
+            return [$entry, $this->achievements->checkAndAward($user, 'journal_save')];
         });
 
         $user->refresh();
@@ -115,6 +117,8 @@ class IntelController extends Controller
         $this->fill($entry, $request);
         $entry->save();
         $this->alerts->check($user, $entry);
+        // Gratitude added later still counts toward its trophy.
+        $this->achievements->checkAndAward($user, 'journal_save');
 
         return $this->success(new IntelResource($entry), 'Intel updated.');
     }
@@ -126,7 +130,7 @@ class IntelController extends Controller
         $entry = $user->intel()->findOrFail($intel);
 
         DB::transaction(function () use ($user, $entry) {
-            $user->gainXp(-$entry->xp_awarded);
+            $this->xp->award($user, -$entry->xp_awarded, 'journal_delete', "Intel for {$entry->date->toFormattedDateString()}");
             $entry->delete();
         });
 

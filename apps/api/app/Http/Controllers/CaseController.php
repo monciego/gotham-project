@@ -8,9 +8,10 @@ use App\Http\Resources\EarnedTrophyResource;
 use App\Models\CaseFile;
 use App\Models\Mission;
 use App\Models\User;
-use App\Services\Achievements;
+use App\Services\AchievementService;
 use App\Services\CaseAnalytics;
 use App\Services\CaseProgress;
+use App\Services\Xp;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +28,8 @@ class CaseController extends Controller
     public function __construct(
         private CaseProgress $progress,
         private CaseAnalytics $analytics,
-        private Achievements $achievements,
+        private AchievementService $achievements,
+        private Xp $xp,
     ) {}
 
     /**
@@ -135,7 +137,7 @@ class CaseController extends Controller
                 $xp = CaseFile::XP;
                 // Not mass-assignable, so requests can't set it.
                 $model->forceFill(['xp_awarded' => $xp])->save();
-                $user->gainXp($xp);
+                $this->xp->award($user, $xp, 'case_complete', $model->name);
             }
 
             $user->alfredMessages()->create([
@@ -146,7 +148,7 @@ class CaseController extends Controller
                 'actions' => [['label' => 'View case', 'href' => "/cases/{$model->id}"]],
             ]);
 
-            return $this->achievements->check($user);
+            return $this->achievements->checkAndAward($user, 'case_complete');
         });
 
         $user->refresh();

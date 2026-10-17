@@ -8,9 +8,10 @@ use App\Http\Resources\MissionResource;
 use App\Models\FocusSession;
 use App\Models\Mission;
 use App\Models\User;
-use App\Services\Achievements;
+use App\Services\AchievementService;
 use App\Services\CaseProgress;
 use App\Services\FocusSessions;
+use App\Services\Xp;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
@@ -25,9 +26,10 @@ class MissionController extends Controller
     private const POSTPONE_WARNING = 3;
 
     public function __construct(
-        private Achievements $achievements,
+        private AchievementService $achievements,
         private FocusSessions $focus,
         private CaseProgress $caseProgress,
+        private Xp $xp,
     ) {}
 
     /**
@@ -123,8 +125,17 @@ class MissionController extends Controller
             $data['abandon_reason'] = null;
         }
 
+        $previousDueDate = $model->due_date->toDateString();
         $model->update($data);
         $model->unsetRelation('case');
+
+        if ($model->wasChanged('times_postponed')) {
+            $model->postponements()->create([
+                'user_id' => $user->id,
+                'from_date' => $previousDueDate,
+                'to_date' => $model->due_date->toDateString(),
+            ]);
+        }
 
         if ($model->wasChanged('times_postponed') && $model->times_postponed === self::POSTPONE_WARNING) {
             $user->alfredMessages()->create([
@@ -176,11 +187,11 @@ class MissionController extends Controller
                     $xp = $model->xpReward();
                     // Not mass-assignable, so requests can't set it.
                     $model->forceFill(['xp_awarded' => $xp])->save();
-                    $user->gainXp($xp);
+                    $this->xp->award($user, $xp, 'mission_complete', $model->title);
                 }
 
                 $caseMilestone = $this->caseProgress->recalculate($model->case);
-                $trophies = $this->achievements->check($user);
+                $trophies = $this->achievements->checkAndAward($user, 'mission_complete');
             });
         }
 

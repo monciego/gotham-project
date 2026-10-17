@@ -6,8 +6,9 @@ use App\Http\Resources\EarnedTrophyResource;
 use App\Models\Arsenal;
 use App\Models\ArsenalLog;
 use App\Models\User;
-use App\Services\Achievements;
+use App\Services\AchievementService;
 use App\Services\ArsenalStreaks;
+use App\Services\Xp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -29,7 +30,8 @@ class ArsenalCheckInController extends Controller
 
     public function __construct(
         private ArsenalStreaks $streaks,
-        private Achievements $achievements,
+        private AchievementService $achievements,
+        private Xp $xp,
     ) {}
 
     /** Measurable habits log `value` (the target when left out); +20 XP at or above the target. */
@@ -63,7 +65,7 @@ class ArsenalCheckInController extends Controller
             ]);
             // Not mass-assignable, so requests can't set it.
             $log->forceFill(['xp_awarded' => $xp])->save();
-            $user->gainXp($xp);
+            $this->xp->award($user, $xp, 'habit_complete', $habit->name);
 
             $streak = $this->streaks->refresh($habit, $user);
             $milestone = $this->streaks->milestoneReached($streak['before'], $streak['after']);
@@ -71,7 +73,7 @@ class ArsenalCheckInController extends Controller
                 $this->announceMilestone($user, $habit, $milestone);
             }
 
-            return [$milestone, $this->achievements->check($user)];
+            return [$milestone, $this->achievements->checkAndAward($user, 'habit_complete')];
         });
 
         $user->refresh();
@@ -119,7 +121,7 @@ class ArsenalCheckInController extends Controller
 
         if ($log) {
             DB::transaction(function () use ($user, $habit, $log) {
-                $user->gainXp(-$log->xp_awarded);
+                $this->xp->award($user, -$log->xp_awarded, 'habit_undo', $habit->name);
                 $log->delete();
                 $this->streaks->refresh($habit, $user);
             });

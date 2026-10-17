@@ -75,6 +75,11 @@ class Mission extends Model
         return $this->hasMany(Operation::class);
     }
 
+    public function postponements(): HasMany
+    {
+        return $this->hasMany(MissionPostponement::class);
+    }
+
     public function focusSessions(): HasMany
     {
         return $this->hasMany(FocusSession::class);

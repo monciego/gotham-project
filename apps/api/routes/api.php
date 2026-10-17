@@ -19,6 +19,8 @@ use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\SavingsGoalController;
 use App\Http\Controllers\SubtaskController;
+use App\Http\Controllers\TrophyController;
+use App\Http\Middleware\RecordDailyActivity;
 use Illuminate\Support\Facades\Route;
 
 // Every route in this file is served under /api/v1 (see bootstrap/app.php).
@@ -33,7 +35,7 @@ Route::prefix('auth')->group(function () {
         Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     });
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', RecordDailyActivity::class])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::put('/profile', [AuthController::class, 'updateProfile']);
@@ -42,7 +44,7 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', RecordDailyActivity::class])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     Route::controller(ArsenalController::class)->group(function () {
@@ -170,6 +172,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/overview/insights', [InsightController::class, 'index']);
     // Recomputing reads 60 days of everything, so it is rate limited.
     Route::post('/overview/insights/generate', [InsightController::class, 'generate'])->middleware('throttle:6,1');
+
+    Route::controller(TrophyController::class)->group(function () {
+        Route::get('/trophies', 'index');
+        Route::get('/trophies/leaderboard', 'leaderboard');
+        Route::get('/trophies/{trophy}', 'show')->whereNumber('trophy');
+        Route::get('/user/xp-history', 'xpHistory');
+    });
 
     Route::get('/alfred-messages', [AlfredMessageController::class, 'index']);
     Route::post('/alfred-messages/{message}/dismiss', [AlfredMessageController::class, 'dismiss'])->whereNumber('message');

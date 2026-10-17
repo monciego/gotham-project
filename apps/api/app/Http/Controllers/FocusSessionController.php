@@ -6,7 +6,7 @@ use App\Http\Resources\EarnedTrophyResource;
 use App\Http\Resources\FocusSessionResource;
 use App\Models\FocusSession;
 use App\Models\User;
-use App\Services\Achievements;
+use App\Services\AchievementService;
 use App\Services\FocusSessions;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +21,7 @@ use Illuminate\Validation\ValidationException;
 class FocusSessionController extends Controller
 {
     public function __construct(
-        private Achievements $achievements,
+        private AchievementService $achievements,
         private FocusSessions $focus,
     ) {}
 
@@ -110,7 +110,7 @@ class FocusSessionController extends Controller
 
         $model->fill(['distractions' => $validated['distractions'] ?? $model->distractions]);
         $xp = $this->focus->complete($user, $model);
-        $trophies = $this->achievements->check($user);
+        $trophies = $this->achievements->checkAndAward($user, 'focus_complete');
         $user->refresh();
 
         return $this->success([

@@ -56,11 +56,14 @@ class User extends Authenticatable
         ];
     }
 
-    /** Adds XP and recalculates the level. Returns whether the user levelled up. */
+    /**
+     * Adds XP and recalculates the level. Returns whether the user levelled up.
+     * Features award XP through App\Services\Xp, which also records it.
+     */
     public function gainXp(int $xp): bool
     {
         $before = $this->current_level;
-        $this->total_xp += $xp;
+        $this->total_xp = max(0, $this->total_xp + $xp);
         $this->current_level = intdiv($this->total_xp, self::XP_PER_LEVEL) + 1;
         $this->save();
 
@@ -138,6 +141,16 @@ class User extends Authenticatable
         return $this->belongsToMany(Achievement::class, 'user_achievements')
             ->using(UserAchievement::class)
             ->withPivot('earned_at');
+    }
+
+    public function xpEvents(): HasMany
+    {
+        return $this->hasMany(XpEvent::class);
+    }
+
+    public function activityDays(): HasMany
+    {
+        return $this->hasMany(UserActivityDay::class);
     }
 
     public function weeklyReports(): HasMany

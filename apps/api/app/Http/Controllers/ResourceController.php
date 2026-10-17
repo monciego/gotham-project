@@ -7,7 +7,7 @@ use App\Http\Resources\ResourceResource;
 use App\Models\Resource;
 use App\Models\SavingsGoal;
 use App\Models\User;
-use App\Services\Achievements;
+use App\Services\AchievementService;
 use App\Services\Finance;
 use App\Services\RecurringResources;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +24,7 @@ class ResourceController extends Controller
     public function __construct(
         private Finance $finance,
         private RecurringResources $recurring,
-        private Achievements $achievements,
+        private AchievementService $achievements,
     ) {}
 
     /** Newest first by default; `sort=amount` for the largest first. */
@@ -55,7 +55,7 @@ class ResourceController extends Controller
 
         $this->recurring->generate($resource);
         $this->finance->checkBudget($user, $resource);
-        $this->achievements->check($user);
+        $this->achievements->checkAndAward($user, 'resource_save');
 
         return $this->success(new ResourceResource($resource), $resource->type === 'income' ? 'Income logged, sir.' : 'Expense logged, sir.', 201);
     }

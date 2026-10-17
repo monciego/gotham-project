@@ -8,9 +8,11 @@ use Illuminate\Database\Seeder;
 /**
  * Trophy definitions. Safe to re-run: rows are matched on `key`.
  *
- * `criteria` always has a `type` naming the stat to check, plus the
- * threshold for it (`count`, `days`, `minutes` or `level`). Optional
- * filters such as `priority` narrow the stat.
+ * `criteria` always has a `type` naming the stat to check (computed in
+ * App\Services\AchievementService::stat()), plus the threshold for it
+ * (`count`, `days`, `minutes`, `hours` or `level`). Optional filters such
+ * as `priority` narrow the stat. `icon` is a Lucide icon name the web maps
+ * to its component (components/trophies/trophy-icons.ts).
  */
 class AchievementsSeeder extends Seeder
 {
@@ -21,6 +23,23 @@ class AchievementsSeeder extends Seeder
         'legendary' => 1000,
     ];
 
+    private const ICONS = [
+        'first_mission' => 'target', 'missions_10' => 'moon', 'missions_100' => 'shield', 'missions_500' => 'crown',
+        'critical_missions_5' => 'siren', 'no_postpone_20' => 'ban', 'early_10' => 'alarm-clock', 'clean_sweep_7' => 'list-checks',
+        'no_postpone_7' => 'shield-check',
+        'first_arsenal_log' => 'wrench', 'streak_7' => 'flame', 'streak_30' => 'repeat', 'streak_100' => 'gem', 'streak_365' => 'mountain',
+        'full_arsenal_7' => 'package-check', 'comeback' => 'rotate-ccw',
+        'first_intel' => 'notebook-pen', 'intel_streak_7' => 'book-open', 'intel_streak_30' => 'library', 'intel_30' => 'search',
+        'gratitude_30' => 'heart', 'intel_365' => 'scroll',
+        'first_resource' => 'building-2', 'tracked_90_days' => 'coins', 'within_budget_1' => 'piggy-bank', 'within_budget_6' => 'landmark',
+        'first_case' => 'briefcase', 'milestones_25' => 'footprints', 'cases_10' => 'folder-archive',
+        'first_focus' => 'timer', 'focus_day_4' => 'dumbbell', 'focus_day_4_hours' => 'hourglass', 'focus_10_hours' => 'brain',
+        'focus_100_hours' => 'swords',
+        'perfect_day' => 'sparkles', 'login_streak_7' => 'calendar-check', 'login_streak_30' => 'calendar-heart',
+        'onboarding' => 'door-open', 'alfred_actions_25' => 'hand-helping', 'alfred_fast_10' => 'zap',
+        'level_10' => 'star', 'level_25' => 'medal', 'level_50' => 'award',
+    ];
+
     public function run(): void
     {
         foreach ($this->achievements() as [$key, $name, $description, $category, $rarity, $criteria]) {
@@ -28,6 +47,7 @@ class AchievementsSeeder extends Seeder
                 'name' => $name,
                 'description' => $description,
                 'category' => $category,
+                'icon' => self::ICONS[$key] ?? 'trophy',
                 'rarity' => $rarity,
                 'criteria' => $criteria,
                 'xp_reward' => self::XP[$rarity],
@@ -58,6 +78,8 @@ class AchievementsSeeder extends Seeder
                 ['type' => 'missions_completed_early', 'count' => 10]],
             ['clean_sweep_7', 'Clean Sweep', 'Finish every mission due that day, on 7 different days.', 'missions', 'rare',
                 ['type' => 'days_all_missions_completed', 'count' => 7]],
+            ['no_postpone_7', 'Iron Will', 'Complete missions 7 days in a row without postponing any.', 'missions', 'rare',
+                ['type' => 'no_postpone_days', 'count' => 7]],
 
             // Arsenal
             ['first_arsenal_log', 'Utility Belt', 'Check in on a habit for the first time.', 'arsenal', 'common',
@@ -80,6 +102,8 @@ class AchievementsSeeder extends Seeder
                 ['type' => 'intel_entries', 'count' => 1]],
             ['intel_streak_7', 'Nightly Debrief', 'Write Intel 7 days in a row.', 'intel', 'rare',
                 ['type' => 'intel_streak', 'days' => 7]],
+            ['intel_streak_30', 'A Month of Intel', 'Write Intel 30 days in a row.', 'intel', 'epic',
+                ['type' => 'intel_streak', 'days' => 30]],
             ['intel_30', "Detective's Journal", 'Write 30 Intel entries.', 'intel', 'rare',
                 ['type' => 'intel_entries', 'count' => 30]],
             ['gratitude_30', 'Thank You, Alfred', 'Record gratitude in 30 Intel entries.', 'intel', 'rare',
@@ -110,10 +134,22 @@ class AchievementsSeeder extends Seeder
                 ['type' => 'focus_sessions_completed', 'count' => 1]],
             ['focus_day_4', 'Training Montage', 'Complete 4 focus sessions in one day.', 'focus', 'common',
                 ['type' => 'focus_sessions_in_day', 'count' => 4]],
+            ['focus_day_4_hours', 'Four Hours Deep', 'Spend 4 hours in focus sessions in one day.', 'focus', 'rare',
+                ['type' => 'focus_hours_day', 'hours' => 4]],
             ['focus_10_hours', 'Deep Work', 'Spend 10 hours in focus sessions.', 'focus', 'rare',
                 ['type' => 'focus_minutes', 'minutes' => 600]],
             ['focus_100_hours', 'League of Shadows', 'Spend 100 hours in focus sessions.', 'focus', 'epic',
                 ['type' => 'focus_minutes', 'minutes' => 6000]],
+
+            // Special
+            ['perfect_day', 'Perfect Day', 'Complete every due habit and every mission due, on the same day.', 'special', 'rare',
+                ['type' => 'perfect_day', 'count' => 1]],
+            ['login_streak_7', 'Regular at the Cave', 'Open Gotham 7 days in a row.', 'special', 'common',
+                ['type' => 'login_streak', 'days' => 7]],
+            ['login_streak_30', 'Every Night, Without Fail', 'Open Gotham 30 days in a row.', 'special', 'epic',
+                ['type' => 'login_streak', 'days' => 30]],
+            ['alfred_fast_10', 'At Once, Alfred', "Act on Alfred's alerts within 5 minutes, 10 times.", 'alfred', 'rare',
+                ['type' => 'alfred_action_fast', 'count' => 10]],
 
             // Alfred and progression
             ['onboarding', 'Welcome to the Cave', 'Finish setting up with Alfred.', 'alfred', 'common',

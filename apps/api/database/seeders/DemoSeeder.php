@@ -12,6 +12,7 @@ use App\Models\Mission;
 use App\Models\Operation;
 use App\Models\Resource;
 use App\Models\User;
+use App\Services\AchievementService;
 use App\Services\ArsenalStreaks;
 use App\Services\CaseProgress;
 use App\Services\IntelSentiment;
@@ -24,11 +25,12 @@ use Illuminate\Support\Facades\Cache;
  * Sample data for the local test user, so HQ has something to show.
  * Re-running it resets that user: XP, trophies, missions, habits, focus sessions, Intel,
  * Resources (transactions, budgets, savings goals), Operations, Cases, Overview's
- * history (60 days of missions, focus and runs, weekly reports, insights) and messages.
+ * history (60 days of missions, focus and runs, weekly reports, insights), the XP
+ * ledger, trophies the history earns, and messages.
  */
 class DemoSeeder extends Seeder
 {
-    public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment, RecurringResources $recurring, CaseProgress $caseProgress, ReportService $reports): void
+    public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment, RecurringResources $recurring, CaseProgress $caseProgress, ReportService $reports, AchievementService $achievements): void
     {
         $user = User::where('email', 'test@example.com')->firstOrFail();
         $user->update(['name' => 'Bruce Wayne', 'work_start_time' => '08:00', 'work_end_time' => '18:00']);
@@ -46,6 +48,8 @@ class DemoSeeder extends Seeder
         $user->savingsGoals()->delete();
         $user->operations()->delete();
         $user->weeklyReports()->delete();
+        $user->xpEvents()->delete();
+        $user->activityDays()->delete();
         $user->systemIntelligence()->delete();
         Cache::forget("alfred-insights:{$user->id}");
 
@@ -222,8 +226,24 @@ class DemoSeeder extends Seeder
             }
         }
         $streaks->refresh($run, $user);
-        // The history's XP, so the level matches what Overview says was earned.
-        $user->gainXp((int) $user->missions()->sum('xp_awarded') + (int) $user->focusSessions()->sum('xp_awarded'));
+        // The history's XP, replayed in order into the ledger so levels and the XP history line up.
+        $earnings = $user->missions()->where('xp_awarded', '>', 0)->get()
+            ->map(fn (Mission $mission) => [$mission->completed_at, $mission->xp_awarded, 'mission_complete', $mission->title])
+            ->merge($user->focusSessions()->where('xp_awarded', '>', 0)->get()
+                ->map(fn (FocusSession $session) => [$session->start_time, $session->xp_awarded, 'focus_complete', "{$session->duration_minutes}-minute focus session"]))
+            ->sortBy(fn (array $earning) => $earning[0]->timestamp);
+        foreach ($earnings as [$at, $amount, $reason, $label]) {
+            $before = $user->current_level;
+            $user->gainXp($amount);
+            $user->xpEvents()->create([
+                'amount' => $amount, 'reason' => $reason, 'label' => $label,
+                'total_after' => $user->total_xp, 'level_before' => $before, 'level_after' => $user->current_level,
+            ])->forceFill(['created_at' => $at])->save();
+        }
+        // Opened the app every day for the last 12 days.
+        foreach (range(12, 1) as $daysAgo) {
+            $user->activityDays()->create(['date' => $today->subDays($daysAgo)->toDateString()]);
+        }
 
         // 95 minutes of focus so far today.
         $start = $today->utc()->max(now()->toImmutable()->subMinutes(150));
@@ -354,6 +374,12 @@ class DemoSeeder extends Seeder
         ]);
         $block->kind = 'focus_block';
         $block->save();
+
+        // Trophies the history has earned. Their messages would bury HQ, so they're cleared.
+        $achievements->checkAndAward($user, 'all');
+        $user->alfredMessages()
+            ->where(fn ($query) => $query->where('title', 'like', 'Trophy unlocked:%')->orWhere('title', 'like', 'Level %, sir.'))
+            ->delete();
 
         // Four weeks of saved reports for "View previous reports".
         foreach (range(4, 1) as $weeksAgo) {

@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
  */
 class FocusSessions
 {
+    public function __construct(private Xp $xp) {}
+
     public function start(User $user, ?Mission $mission, int $minutes, ?int $energyBefore): FocusSession
     {
         return DB::transaction(function () use ($user, $mission, $minutes, $energyBefore) {
@@ -50,7 +52,7 @@ class FocusSessions
             if ($xp > 0) {
                 // Not mass-assignable, so requests can't set it.
                 $session->forceFill(['xp_awarded' => $xp])->save();
-                $user->gainXp($xp);
+                $this->xp->award($user, $xp, 'focus_complete', $session->mission?->title ?? "{$session->duration_minutes}-minute focus session");
             }
 
             $user->alfredMessages()->create([

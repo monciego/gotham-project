@@ -131,7 +131,7 @@ class MissionTest extends TestCase
         $this->assertSame(50, $case->refresh()->progress);
         // 100 for the mission + trophy XP.
         $this->assertGreaterThan(100, $this->user->refresh()->total_xp);
-        $this->assertSame(1, $this->user->alfredMessages()->where('title', 'Trophy earned: First Patrol')->count());
+        $this->assertSame(1, $this->user->alfredMessages()->where('title', 'Trophy unlocked: First Patrol. Well earned, sir.')->count());
 
         // Reopen and complete again: no more XP.
         $this->api('put', "/missions/{$mission->id}", ['status' => 'not_started'])->assertJsonPath('data.completed_at', null);

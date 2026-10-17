@@ -7,14 +7,14 @@ use App\Http\Resources\CaseMilestoneResource;
 use App\Models\CaseFile;
 use App\Models\CaseMilestone;
 use App\Models\User;
-use App\Services\Achievements;
+use App\Services\AchievementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /** Milestones along a case, by target date. Completing one can earn trophies. */
 class CaseMilestoneController extends Controller
 {
-    public function __construct(private Achievements $achievements) {}
+    public function __construct(private AchievementService $achievements) {}
 
     public function index(Request $request, int $case): JsonResponse
     {
@@ -71,7 +71,7 @@ class CaseMilestoneController extends Controller
         $completedNow = $milestone->completed && ($milestone->wasRecentlyCreated || $milestone->wasChanged('completed'));
 
         if ($completedNow) {
-            $this->achievements->check($request->user());
+            $this->achievements->checkAndAward($request->user(), 'milestone_complete');
         }
 
         return $completedNow;

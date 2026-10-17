@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Support\Rewards;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,7 +13,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One collector per request; AttachRewards clears it as each request starts.
+        $this->app->singleton(Rewards::class);
     }
 
     /**

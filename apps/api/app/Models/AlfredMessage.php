@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'read_at',
     'dismissed_at',
     'action_taken',
+    'acted_at',
 ])]
 class AlfredMessage extends Model
 {
@@ -32,6 +33,7 @@ class AlfredMessage extends Model
             'read_at' => 'datetime',
             'dismissed_at' => 'datetime',
             'action_taken' => 'boolean',
+            'acted_at' => 'datetime',
         ];
     }
 
