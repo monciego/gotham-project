@@ -1,0 +1,74 @@
+name: gotham
+
+services:
+  api:
+    build:
+      context: ./apps/api
+      args:
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./apps/web
+    ports:
+      - "3000:3000"
+    environment:
+      # Server components run inside this container, where "localhost" is the
+      # web container itself, so they reach the API by its service name.
+      API_INTERNAL_URL: http://api:8000
+    volumes:
+      # The whole repo is mounted because web imports workspace packages.
+      - .:/app
+      # Container-only node_modules, so they never clash with your host install.
+      - web_root_modules:/app/node_modules
+      - web_app_modules:/app/apps/web/node_modules
+      - web_ui_modules:/app/packages/ui/node_modules
+      - web_eslint_modules:/app/packages/eslint-config/node_modules
+    depends_on:
+      - api
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: gotham
+      POSTGRES_USER: alfred
+      POSTGRES_PASSWORD: iamthenight
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alfred -d gotham"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:
+  redis_data:
+  web_root_modules:
+  web_app_modules:
+  web_ui_modules:
+  web_eslint_modules:
