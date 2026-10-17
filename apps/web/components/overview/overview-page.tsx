@@ -4,7 +4,10 @@ import { Button } from "@gotham/ui/components/ui/button";
 import { Input } from "@gotham/ui/components/ui/input";
 import { Skeleton } from "@gotham/ui/components/ui/skeleton";
 import { cn } from "@gotham/ui/lib/utils";
+import { BarChart3, FileText, Lightbulb, Network, type LucideIcon } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { GothamMap } from "@/components/graph/gotham-map";
 import { SectionCard } from "@/components/section-card";
 import { say } from "@/lib/alfred";
 import { todayIso } from "@/lib/format";
@@ -56,7 +59,64 @@ function OverviewSkeleton() {
   );
 }
 
+const VIEWS: { value: string; label: string; icon: LucideIcon }[] = [
+  { value: "charts", label: "Charts", icon: BarChart3 },
+  { value: "insights", label: "Insights", icon: Lightbulb },
+  { value: "reports", label: "Reports", icon: FileText },
+  { value: "map", label: "Gotham Map", icon: Network },
+];
+
+type View = "charts" | "insights" | "reports" | "map";
+
+/** Overview's four views. The view is in the URL (?view=map), so each one can be linked to. */
 export function OverviewPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("view");
+  const view: View = VIEWS.some((item) => item.value === requested) ? (requested as View) : "charts";
+
+  function showView(next: View) {
+    const params = new URLSearchParams(searchParams);
+    if (next === "charts") params.delete("view");
+    else params.set("view", next);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
+
+  return (
+    <div className="grid gap-6">
+      <h2 className="text-2xl font-semibold tracking-tight">Overview</h2>
+
+      <div role="tablist" aria-label="Overview" className="flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1 sm:w-fit">
+        {VIEWS.map(({ value, label, icon: Icon }) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={view === value}
+            onClick={() => showView(value as View)}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors duration-200",
+              view === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Icon className="size-4" aria-hidden />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "charts" && <ChartsView />}
+      {view === "insights" && <InsightsSection />}
+      {view === "reports" && <WeeklyReportCard />}
+      {view === "map" && <GothamMap />}
+    </div>
+  );
+}
+
+/** The period's numbers and charts. */
+function ChartsView() {
   const [period, setPeriod] = useState<OverviewPeriodName>("month");
   const [range, setRange] = useState({ start: thirtyDaysAgo(), end: todayIso() });
   // The custom range only applies once submitted, so typing a date doesn't refetch.
@@ -75,16 +135,11 @@ export function OverviewPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Overview</h2>
-          {data && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {shortDate(data.period.start)} – {shortDate(data.period.end)}
-            </p>
-          )}
-        </div>
-      </div>
+      {data && (
+        <p className="-mb-3 text-sm text-muted-foreground">
+          {shortDate(data.period.start)} – {shortDate(data.period.end)}
+        </p>
+      )}
 
       <div role="tablist" aria-label="Period" className="flex flex-wrap gap-1 border-b border-border">
         {PERIODS.map(({ value, label }) => (
@@ -156,8 +211,6 @@ export function OverviewPage() {
         </div>
       )}
 
-      <InsightsSection />
-      <WeeklyReportCard />
     </div>
   );
 }

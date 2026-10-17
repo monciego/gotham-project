@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
 
         if (app()->environment('local')) {
             $this->call(DemoSeeder::class);
+            // A second account, graph@example.com, for the Gotham Map.
+            $this->call(GraphDemoSeeder::class);
         }
     }
 }

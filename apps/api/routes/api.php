@@ -9,6 +9,7 @@ use App\Http\Controllers\CaseController;
 use App\Http\Controllers\CaseMilestoneController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FocusSessionController;
+use App\Http\Controllers\GraphController;
 use App\Http\Controllers\HelloController;
 use App\Http\Controllers\InsightController;
 use App\Http\Controllers\IntelController;
@@ -173,6 +174,8 @@ Route::middleware(['auth:sanctum', RecordDailyActivity::class])->group(function 
     });
 
     Route::get('/overview/insights', [InsightController::class, 'index']);
+    // The Gotham Map on the Overview page.
+    Route::get('/graph', [GraphController::class, 'index']);
     // Recomputing reads 60 days of everything, so it is rate limited.
     Route::post('/overview/insights/generate', [InsightController::class, 'generate'])->middleware('throttle:6,1');
 

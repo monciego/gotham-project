@@ -771,3 +771,79 @@ export type Rewards = {
   level_up: { from: number; to: number } | null;
   trophies: (EarnedTrophy & { category: TrophyCategory; earned_at: string })[];
 };
+
+/* Gotham Map (GET /graph) ------------------------------------------------- */
+
+export type GraphNodeType = "case" | "mission" | "arsenal" | "intel";
+
+type GraphNodeBase = { id: string; label: string; color: string; size: number };
+
+export type GraphNode =
+  | (GraphNodeBase & {
+      type: "case";
+      status: CaseStatus;
+      progress: number;
+      data: {
+        id: number;
+        name: string;
+        status: CaseStatus;
+        progress: number;
+        missions_total: number;
+        missions_completed: number;
+        target_end_date: string | null;
+      };
+    })
+  | (GraphNodeBase & {
+      type: "mission";
+      status: MissionStatus;
+      priority: Priority;
+      times_postponed: number;
+      /** Completed focus minutes: the thickness of the node's border. */
+      focus_minutes: number;
+      data: {
+        id: number;
+        title: string;
+        priority: Priority;
+        status: MissionStatus;
+        why_it_matters: string;
+        due_date: string;
+        is_overdue: boolean;
+        times_postponed: number;
+        past_self_message: string | null;
+        case_id: number | null;
+        dependency_ids: number[];
+        focus_minutes: number;
+        focus_sessions: number;
+      };
+    })
+  | (GraphNodeBase & {
+      type: "arsenal";
+      current_streak: number;
+      data: { id: number; name: string; category: HabitCategory; current_streak: number; best_streak: number };
+    })
+  | (GraphNodeBase & {
+      type: "intel";
+      mood: IntelMood | null;
+      data: {
+        id: number;
+        date: string;
+        mood: IntelMood | null;
+        energy_level: number | null;
+        stress_level: number | null;
+        excerpt: string;
+      };
+    });
+
+export type GraphEdgeType = "belongs_to" | "depends_on" | "correlated";
+
+export type GraphEdge = { id: string; source: string; target: string; type: GraphEdgeType; label: string };
+
+export type GraphData = { nodes: GraphNode[]; edges: GraphEdge[] };
+
+export type GraphFilters = {
+  types: GraphNodeType[];
+  /** "all" means the open missions (and completed ones when `showCompleted`). */
+  missionStatus: "all" | "not_started" | "in_progress" | "completed";
+  showCompleted: boolean;
+  intelDays: number;
+};
