@@ -43,7 +43,88 @@ export type Mission = {
   times_postponed: number;
   energy_required: "high" | "medium" | "low";
   tags: string[];
+  notes: string | null;
+  past_self_message: string | null;
+  abandon_reason: string | null;
   completed_at: string | null;
+  created_at: string;
+  /** Present on list and detail responses, not on HQ. */
+  case?: { id: number; name: string; color: string | null } | null;
+  subtasks_count?: number;
+  subtasks_completed_count?: number;
+};
+
+export type MissionStatus = Mission["status"];
+
+export type MissionSummary = Pick<Mission, "id" | "title" | "status" | "priority" | "due_date">;
+
+export type Subtask = { id: number; title: string; completed: boolean; order: number };
+
+export type FocusSession = {
+  id: number;
+  mission_id: number | null;
+  start_time: string;
+  end_time: string | null;
+  duration_minutes: number;
+  completed: boolean;
+  energy_before: number | null;
+  energy_after: number | null;
+  notes: string | null;
+};
+
+export type MissionDetail = Mission & {
+  subtasks: Subtask[];
+  focus_sessions: FocusSession[];
+  total_focus_minutes: number;
+  active_session: FocusSession | null;
+  dependencies: MissionSummary[];
+  dependents: MissionSummary[];
+};
+
+export type Paginated<T> = {
+  items: T[];
+  meta: { current_page: number; last_page: number; per_page: number; total: number };
+};
+
+export type CaseSummary = {
+  id: number;
+  name: string;
+  status: string;
+  color: string | null;
+  progress: number;
+};
+
+export type EarnedTrophy = {
+  key: string;
+  name: string;
+  description: string;
+  rarity: "common" | "rare" | "epic" | "legendary";
+  xp_reward: number;
+};
+
+export type MissionCompletion = {
+  mission: MissionDetail;
+  xp_awarded: number;
+  total_xp: number;
+  current_level: number;
+  level_up: boolean;
+  achievements: EarnedTrophy[];
+};
+
+/** What the create and edit forms send. */
+export type MissionInput = {
+  title: string;
+  description: string | null;
+  why_it_matters: string;
+  priority: Priority;
+  due_date: string;
+  due_time: string | null;
+  estimated_minutes: number | null;
+  case_id: number | null;
+  energy_required: Mission["energy_required"];
+  tags: string[];
+  notes: string | null;
+  past_self_message: string | null;
 };
 
 /** A habit with today's state, as HQ shows it. */

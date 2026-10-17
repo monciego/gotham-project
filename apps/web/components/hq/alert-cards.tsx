@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useActOnAlert, useDismissAlert } from "@/lib/queries";
 import type { AlfredMessage } from "@/lib/types";
-import { MOOD_ACCENT } from "./moods";
+import { MOOD_ACCENT } from "@/components/alfred/moods";
 
 /** Alfred's messages as dismissible cards at the top of HQ. */
 export function AlertCards({ alerts }: { alerts: AlfredMessage[] }) {

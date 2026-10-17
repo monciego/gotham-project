@@ -1,5 +1,6 @@
 import { cn } from "@gotham/ui/lib/utils";
 import { Flame, Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { formatMinutes } from "@/lib/format";
 import type { Dashboard } from "@/lib/types";
 
 function StatCard({ label, children }: { label: string; children: React.ReactNode }) {
@@ -9,11 +10,6 @@ function StatCard({ label, children }: { label: string; children: React.ReactNod
       {children}
     </section>
   );
-}
-
-function formatMinutes(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  return hours ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
 }
 
 function Trend({ today, yesterday }: { today: number; yesterday: number }) {

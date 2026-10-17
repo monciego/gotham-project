@@ -1,13 +1,13 @@
 "use client";
 
 import { Button } from "@gotham/ui/components/ui/button";
-import { useState } from "react";
 import { say } from "@/lib/alfred";
 import { celebrate } from "@/lib/celebrate";
 import { useActOnAlert, useDashboard, useDismissAlert } from "@/lib/queries";
 import type { HabitToday } from "@/lib/types";
+import { useAlfredStore } from "@/stores/alfred";
 import { AlertCards } from "./alert-cards";
-import { AlfredPanel, type PanelMessage } from "./alfred-panel";
+import { AlfredPanel } from "@/components/alfred/alfred-panel";
 import { HqSkeleton } from "./hq-skeleton";
 import { MorningBrief } from "./morning-brief";
 import { StatCards } from "./stat-cards";
@@ -20,7 +20,8 @@ export function HqDashboard() {
   const { data, isPending, isError, refetch } = useDashboard();
   const dismiss = useDismissAlert();
   const act = useActOnAlert();
-  const [celebration, setCelebration] = useState<PanelMessage | null>(null);
+  const alfredSays = useAlfredStore((state) => state.say);
+  const toast = useAlfredStore((state) => state.toast);
 
   if (isPending) {
     return <HqSkeleton />;
@@ -40,20 +41,17 @@ export function HqDashboard() {
   function handleMilestone(milestone: number, habit: HabitToday) {
     void celebrate();
     const line = MILESTONE_LINES[milestone as keyof typeof MILESTONE_LINES];
-    setCelebration({
-      key: `milestone-${habit.id}-${milestone}`,
+    alfredSays({
       mood: "proud",
       title: `${habit.name}: ${milestone} ${habit.streak_unit} in a row`,
       message: line ? say(line, 0) : say("greeting", 0),
-      actions: [],
     });
   }
 
-  // The first critical alert gets Alfred's panel; the rest are cards. A celebration takes the panel over.
+  // The first critical alert gets Alfred's panel and the rest are cards.
+  // While Alfred is saying something else (a toast), the critical alert waits.
   const critical = data.alfred_alerts.find((alert) => alert.priority === "critical");
   const cards = data.alfred_alerts.filter((alert) => alert !== critical);
-  const panel: PanelMessage | null =
-    celebration ?? (critical ? { ...critical, key: `alert-${critical.id}` } : null);
 
   return (
     <div className="grid gap-6">
@@ -72,9 +70,9 @@ export function HqDashboard() {
       </div>
 
       <AlfredPanel
-        message={panel}
-        onDismiss={() => (celebration ? setCelebration(null) : critical && dismiss.mutate(critical.id))}
-        onAction={() => critical && !celebration && act.mutate(critical.id)}
+        message={critical && !toast ? { ...critical, key: `alert-${critical.id}` } : null}
+        onDismiss={() => critical && dismiss.mutate(critical.id)}
+        onAction={() => critical && act.mutate(critical.id)}
       />
     </div>
   );

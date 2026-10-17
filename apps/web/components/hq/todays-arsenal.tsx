@@ -4,7 +4,7 @@ import Link from "next/link";
 import { say } from "@/lib/alfred";
 import type { HabitToday } from "@/lib/types";
 import { HabitCheck } from "./habit-check";
-import { SectionCard } from "./section-card";
+import { SectionCard } from "@/components/section-card";
 
 type TodaysArsenalProps = {
   habits: HabitToday[];

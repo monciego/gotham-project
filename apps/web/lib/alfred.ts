@@ -33,6 +33,21 @@ const lines = {
   streak30: ["Thirty in a row, sir. Gotham will notice the difference."],
   streak100: ["One hundred in a row, sir. I confess I'm rather proud."],
   comingSoon: ["I'm still preparing this part of the cave, sir. It won't be long."],
+  noMissions: ["No missions, sir. Gotham is quiet tonight."],
+  noMissionsFiltered: ["Nothing matches that, sir. Perhaps loosen the filters?"],
+  whyHelper: ["Alfred won't let you skip this. Your reason is your fuel."],
+  missionComplete: ["Well done, sir. Gotham is a little safer tonight."],
+  missionCompleteDetail: ["Another one closed."],
+  missionAbandoned: ["Understood, sir. Not every battle is ours to fight."],
+  sessionStarted: ["Twenty-five minutes, sir."],
+  sessionStartedDetail: ["I shall keep the time. You keep your focus."],
+  sessionDone: ["Session complete, sir."],
+  sessionDoneDetail: ["Every minute you put in is one Gotham doesn't lose."],
+  sessionStopped: ["Session ended early, sir."],
+  sessionStoppedDetail: ["It still counts. Shall we go again when you're ready?"],
+  breakdownIntro: ["Don't think about the whole mission, sir. Just this."],
+  breakdownDone: ["You've started. Momentum is everything. Start a full session?"],
+  pastSelf: ["Your past self has something to say:"],
 } as const;
 
 export type AlfredEvent = keyof typeof lines;

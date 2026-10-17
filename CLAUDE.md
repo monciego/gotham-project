@@ -86,7 +86,8 @@ Each feature is built as a vertical slice:
 
 Web conventions:
 - Routes use the Batman names (`/hq`, `/missions`, …), listed once in `lib/nav.ts` (sidebar and header titles) and `lib/routes.ts` (protection). `app/(gotham)/[section]/page.tsx` is a placeholder for any section without a real page; adding `app/(gotham)/<section>/page.tsx` replaces it.
-- Query keys and hooks live in `lib/queries.ts`. Mutations update the cache optimistically and roll back on error (see `useToggleHabit`).
+- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts) and `lib/mission-queries.ts` (missions). Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
+- `useAlfredStore().say()` (`stores/alfred.ts`) shows Alfred's panel from anywhere; `AlfredHost` in the `(gotham)` layout renders it. On HQ, a critical alert takes the panel only while no toast is showing.
 - Loading states are skeletons (`@gotham/ui/components/ui/skeleton`), not spinners. Spinners are only for buttons that submit.
 - Animation uses `motion` (Framer Motion's current package; import from `motion/react`). `Providers` sets `reducedMotion="user"`.
 - When adding shadcn components, check that the generated files import `cn` from `@gotham/ui/lib/utils`. The CLI has produced `from "cn"` here and installed an unrelated npm package called `cn`.
@@ -101,6 +102,15 @@ API conventions:
 - "Today" always means the user's day: use `$user->today()` (a `CarbonImmutable` at midnight in their timezone) and `whereDate()` on date columns. Plain `where('date', …)` breaks on SQLite, which the tests use.
 - Habit schedules (`arsenal.frequency`) and streak rules are documented on the `Arsenal` model. `App\Services\ArsenalStreaks` computes streaks, and both HQ and habit completion go through it.
 - Alfred message `actions` are `[{label, href}]`.
+- XP:
+  - Missions award 100/75/50/25 XP by priority (`Mission::XP`), once per mission (tracked in `xp_awarded`).
+  - 1,000 XP per level (`User::gainXp()`).
+  - `App\Services\Achievements::check()` awards every trophy whose `criteria` is now met, with its XP and an Alfred message. Criteria types it doesn't compute yet are skipped.
+- Focus sessions:
+  - Only one runs per user; starting another ends the previous one.
+  - `FocusSession::finish()` records time up to the planned length on the session and the mission.
+  - Completing or abandoning a mission ends its running session.
+- Moving a mission's `due_date` later increments `times_postponed`; at 3, Alfred posts a "break it down" alert.
 - `DemoSeeder` (run by `db:seed` in the local environment) gives `test@example.com` / `password` a full HQ. Re-running it resets that user's data.
 
 Missions belong to Cases. HQ and Overview aggregate the other features. Streaks and trophies are computed on the API side, and trophies are awarded by queued jobs.

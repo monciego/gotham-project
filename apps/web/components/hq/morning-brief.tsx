@@ -1,15 +1,14 @@
 "use client";
 
 import { BracketCard } from "@gotham/ui/components/bracket-card";
-import { buttonVariants } from "@gotham/ui/components/ui/button";
-import { cn } from "@gotham/ui/lib/utils";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { say } from "@/lib/alfred";
 import type { Dashboard, HabitToday } from "@/lib/types";
 import { HabitCheck } from "./habit-check";
-import { PriorityBadge } from "./priority-badge";
+import { PriorityBadge } from "@/components/missions/priority-badge";
+import { StartSessionButton } from "@/components/missions/start-session-button";
 
 type MorningBriefProps = {
   dashboard: Dashboard;
@@ -40,7 +39,9 @@ export function MorningBrief({ dashboard, onMilestone }: MorningBriefProps) {
               </p>
               <div className="mt-2 flex items-start gap-2">
                 <PriorityBadge priority={mission.priority} />
-                <h3 className="text-lg leading-snug font-medium">{mission.title}</h3>
+                <Link href={`/missions/${mission.id}`} className="text-lg leading-snug font-medium hover:text-primary">
+                  {mission.title}
+                </Link>
               </div>
               <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{mission.why_it_matters}</p>
               {mission.times_postponed > 0 && (
@@ -49,15 +50,14 @@ export function MorningBrief({ dashboard, onMilestone }: MorningBriefProps) {
                   Postponed {mission.times_postponed} {mission.times_postponed === 1 ? "time" : "times"}
                 </p>
               )}
-              <Link
-                href={`/missions?focus=${mission.id}`}
-                className={cn(
-                  buttonVariants({ size: "lg" }),
-                  "mt-5 h-11 w-full font-mono tracking-[0.2em]",
-                )}
+              <StartSessionButton
+                missionId={mission.id}
+                variant="default"
+                size="lg"
+                className="mt-5 h-11 w-full font-mono tracking-[0.2em]"
               >
                 START YOUR DAY
-              </Link>
+              </StartSessionButton>
             </>
           ) : (
             <p className="text-muted-foreground">{say("noMission", 0)}</p>
