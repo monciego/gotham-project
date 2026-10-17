@@ -141,20 +141,102 @@ export type MissionInput = {
   past_self_message: string | null;
 };
 
-/** A habit with today's state, as HQ shows it. */
-export type HabitToday = {
+export type HabitType = "daily" | "weekly" | "specific_days" | "interval" | "measurable" | "yes_no";
+
+export type HabitCategory = "health" | "productivity" | "learning" | "social" | "mental" | "physical" | "other";
+
+export type Mode = User["current_mode"];
+
+/**
+ * `frequency` by type: weekly {times}, specific_days {days: ISO weekdays,
+ * 1 = Monday}, interval {every}; empty for the rest.
+ */
+export type HabitFrequency = { times?: number; days?: number[]; every?: number };
+
+/** A habit with today's state and streaks, as every Arsenal endpoint (and HQ) returns it. */
+export type Habit = {
   id: number;
   name: string;
+  description: string | null;
+  /** Older habits may have a category outside HabitCategory. */
   category: string;
-  type: "daily" | "weekly" | "specific_days" | "interval" | "measurable" | "yes_no";
+  type: HabitType;
+  frequency: HabitFrequency;
   target_value: number | null;
   unit: string | null;
+  /** HH:MM. */
+  reminder_time: string | null;
+  active: boolean;
+  /** Empty means every mode. */
+  mode_specific: Mode[];
+  created_at: string;
+  /** On today's list: active, meant for the current mode, and due. */
+  active_today: boolean;
   completed: boolean;
+  skipped: boolean;
   value: number | null;
+  note: string | null;
   current_streak: number;
   best_streak: number;
   streak_unit: "days" | "weeks";
+  /** Missing today would end a streak longer than 3. */
+  streak_at_risk: boolean;
   week_progress: { done: number; target: number } | null;
+  /** This month's completion rate, 0–100, or null before anything was due. */
+  month_rate: number | null;
+};
+
+/** HQ's name for the same shape. */
+export type HabitToday = Habit;
+
+export type HabitCheckIn = {
+  habit: Habit;
+  /** Negative when undoing a check-in takes XP back. */
+  xp_awarded: number;
+  total_xp: number;
+  current_level: number;
+  level_up: boolean;
+  /** Set when this completion pushed the streak past 7, 30 or 100. */
+  milestone: number | null;
+  achievements: EarnedTrophy[];
+};
+
+export type HabitLog = {
+  id: number;
+  date: string;
+  completed: boolean;
+  skipped: boolean;
+  value: number | null;
+  note: string | null;
+  xp_awarded: number;
+  completed_at: string | null;
+};
+
+export type HeatmapState = "completed" | "skipped" | "missed" | "pending" | "off" | "none";
+
+export type HabitAnalytics = {
+  completion_rate: number | null;
+  /** 52 weeks, Sunday to Saturday, oldest first. */
+  heatmap: { date: string; state: HeatmapState; value: number | null }[];
+  /** Each day's completion rate over the 7 days ending then. */
+  last_30_days: { date: string; rate: number | null }[];
+  /** ISO weekdays, Monday first. */
+  by_weekday: { weekday: number; rate: number | null }[];
+};
+
+export type HabitDetail = { habit: Habit; analytics: HabitAnalytics; recent_logs: HabitLog[] };
+
+export type HabitInput = {
+  name: string;
+  description: string | null;
+  category: HabitCategory;
+  type: HabitType;
+  frequency: HabitFrequency;
+  target_value: number | null;
+  unit: string | null;
+  reminder_time: string | null;
+  mode_specific: Mode[];
+  active: boolean;
 };
 
 export type AlfredMood = "concerned" | "proud" | "disappointed" | "encouraging";
@@ -195,8 +277,3 @@ export type Dashboard = {
   alfred_alerts: AlfredMessage[];
 };
 
-export type HabitCompletion = {
-  habit: Pick<HabitToday, "id" | "completed" | "current_streak" | "best_streak" | "streak_unit">;
-  /** Set when this completion pushed the streak past 7, 30 or 100. */
-  milestone: number | null;
-};

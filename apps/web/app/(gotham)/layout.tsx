@@ -1,3 +1,4 @@
+import { StreakGuard } from "@/components/arsenal/streak-guard";
 import { Providers } from "@/components/providers";
 import { AlfredHost } from "@/components/shell/alfred-host";
 import { Header } from "@/components/shell/header";
@@ -13,6 +14,7 @@ export default function GothamLayout({ children }: { children: React.ReactNode }
         <main className="mx-auto max-w-6xl p-4 md:p-8">{children}</main>
       </div>
       <AlfredHost />
+      <StreakGuard />
     </Providers>
   );
 }

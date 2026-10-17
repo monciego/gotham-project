@@ -86,7 +86,8 @@ Each feature is built as a vertical slice:
 
 Web conventions:
 - Routes use the Batman names (`/hq`, `/missions`, …), listed once in `lib/nav.ts` (sidebar and header titles) and `lib/routes.ts` (protection). `app/(gotham)/[section]/page.tsx` is a placeholder for any section without a real page; adding `app/(gotham)/<section>/page.tsx` replaces it.
-- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions) and `lib/focus-queries.ts` (focus sessions). Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
+- Query keys and hooks live in `lib/queries.ts` (HQ, user, alerts), `lib/mission-queries.ts` (missions), `lib/focus-queries.ts` (focus sessions) and `lib/arsenal-queries.ts` (habits).
+- `StreakGuard` (in the `(gotham)` layout) asks after 8pm, on each navigation, before a streak marked `streak_at_risk` is lost. Dismissals are remembered per day in localStorage. Mutations update the cache optimistically and roll back on error. `optimistic()` in `mission-queries.ts` snapshots every mission query for that.
 - The focus screen is `/focus/[sessionId]` in the `(focus)` route group: full screen, with no sidebar, header or Alfred toasts. `QuickStartButton` starts a session and opens it. `stores/focus.ts` holds the running countdown and distraction count, persisted to localStorage.
 - `useAlfredStore().say()` (`stores/alfred.ts`) shows Alfred's panel from anywhere; `AlfredHost` in the `(gotham)` layout renders it. On HQ, a critical alert takes the panel only while no toast is showing.
 - Loading states are skeletons (`@gotham/ui/components/ui/skeleton`), not spinners. Spinners are only for buttons that submit.
@@ -101,7 +102,12 @@ API conventions:
 - Enum columns are plain strings. The allowed values are in the migrations.
 - Trophy definitions live in `AchievementsSeeder`. It matches rows on `key`, so it is safe to re-run.
 - "Today" always means the user's day: use `$user->today()` (a `CarbonImmutable` at midnight in their timezone) and `whereDate()` on date columns. Plain `where('date', …)` breaks on SQLite, which the tests use.
-- Habit schedules (`arsenal.frequency`) and streak rules are documented on the `Arsenal` model. `App\Services\ArsenalStreaks` computes streaks, and both HQ and habit completion go through it.
+- Arsenal (habits):
+  - Habit schedules (`arsenal.frequency`) are documented on the `Arsenal` model.
+  - `App\Services\ArsenalStreaks` is the single source for due days, streaks and today's list. `timeline()` gives each day's state (completed, skipped, missed, pending, off), and streaks, `ArsenalAnalytics` (heatmap and charts) and HQ all build on it.
+  - Skips and days a habit isn't due never break a streak. In some modes a few misses in a row are forgiven: `config/gotham.php` (`arsenal.grace`, by mode).
+  - Each check-in gives 10 XP, plus 20 when a measurable habit reaches its target, stored as `xp_awarded` on the log. Undoing the check-in takes it back.
+  - `mode_specific` limits a habit to some modes.
 - Alfred message `actions` are `[{label, href}]`.
 - XP:
   - Missions award 100/75/50/25 XP by priority (`Mission::XP`), once per mission (tracked in `xp_awarded`).

@@ -4,7 +4,7 @@ import type {
   AlfredMessage,
   ApiEnvelope,
   Dashboard,
-  HabitCompletion,
+  HabitCheckIn,
   HabitToday,
   User,
 } from "./types";
@@ -44,7 +44,7 @@ export function useUnreadAlerts() {
 }
 
 /** Applies a change to one habit wherever HQ shows it. */
-function patchHabit(dashboard: Dashboard, id: number, changes: Partial<HabitToday>): Dashboard {
+export function patchHabit(dashboard: Dashboard, id: number, changes: Partial<HabitToday>): Dashboard {
   const patch = (habits: HabitToday[]) =>
     habits.map((habit) => (habit.id === id ? { ...habit, ...changes } : habit));
 
@@ -63,8 +63,8 @@ export function useToggleHabit() {
     mutationFn: async ({ id, completed }: { id: number; completed: boolean }) => {
       const url = `/arsenal/${id}/complete`;
       const { data } = completed
-        ? await api.post<ApiEnvelope<HabitCompletion>>(url)
-        : await api.delete<ApiEnvelope<HabitCompletion>>(url);
+        ? await api.post<ApiEnvelope<HabitCheckIn>>(url)
+        : await api.delete<ApiEnvelope<HabitCheckIn>>(url);
       return data.data;
     },
     onMutate: async ({ id, completed }) => {
@@ -88,7 +88,11 @@ export function useToggleHabit() {
       );
     },
     // Refreshes the streak stat. The quote is fixed per day, so refetching doesn't change it.
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.dashboard }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
+      void queryClient.invalidateQueries({ queryKey: ["arsenal"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.me });
+    },
   });
 }
 
