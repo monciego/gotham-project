@@ -43,7 +43,12 @@ Docker details that aren't obvious from one file:
 
 Web stack: TanStack Query for server state, Zustand for client state only, React Hook Form + Zod for forms, Recharts for charts, Framer Motion for animation, Lucide for icons.
 
-Auth flow: the web app stores the Sanctum token in an httpOnly cookie and sends it as a bearer token, so server components can call the API directly.
+Auth flow (the Sanctum token lives only in the httpOnly `gotham_token` cookie, so browser JS never sees it):
+- `app/api/auth/{login,register,logout}` are Next route handlers. They call Laravel, then set or clear the cookie. Login and register return only the user to the browser.
+- Browser code uses `api` from `lib/api.ts`, whose base URL is `/api/backend`. The catch-all route `app/api/backend/[...path]` adds the Bearer token from the cookie and forwards to Laravel's `/api/v1`. It clears the cookie on a 401 or after the account is deleted.
+- Server components use `serverApi` / `getCurrentUser()` from `lib/server-api.ts`, which call Laravel directly. On a 401 they redirect to `/api/auth/session-expired`, which clears the cookie. Without that, `proxy.ts` would bounce `/login` straight back.
+- `proxy.ts` (Next 16's name for `middleware.ts`) only checks that the cookie exists. Protected prefixes and the auth pages are listed in `lib/routes.ts`. HQ (`/hq`) is the home page after signing in.
+- The Zustand store `stores/auth.ts` wraps these calls. Forms map Laravel's 422 `errors` onto their fields with `applyApiErrors()` from `lib/form-errors.ts`.
 
 ## Commands
 
