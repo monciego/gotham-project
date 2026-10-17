@@ -6,18 +6,20 @@ use App\Models\AlfredMessage;
 use App\Models\Arsenal;
 use App\Models\ArsenalLog;
 use App\Models\FocusSession;
+use App\Models\Intel;
 use App\Models\Mission;
 use App\Models\User;
 use App\Services\ArsenalStreaks;
+use App\Services\IntelSentiment;
 use Illuminate\Database\Seeder;
 
 /**
  * Sample data for the local test user, so HQ has something to show.
- * Re-running it resets that user: XP, trophies, missions, habits, focus sessions and messages.
+ * Re-running it resets that user: XP, trophies, missions, habits, focus sessions, Intel and messages.
  */
 class DemoSeeder extends Seeder
 {
-    public function run(ArsenalStreaks $streaks): void
+    public function run(ArsenalStreaks $streaks, IntelSentiment $sentiment): void
     {
         $user = User::where('email', 'test@example.com')->firstOrFail();
         $user->update(['name' => 'Bruce Wayne']);
@@ -28,6 +30,7 @@ class DemoSeeder extends Seeder
         $user->arsenal()->withTrashed()->forceDelete();
         $user->focusSessions()->delete();
         $user->alfredMessages()->delete();
+        $user->intel()->delete();
 
         $today = $user->today();
 
@@ -99,6 +102,38 @@ class DemoSeeder extends Seeder
             'end_time' => $start->addMinutes(105),
             'duration_minutes' => 45,
         ]);
+
+        // [days ago, mood, energy, stress, content, gratitude, wins, struggles, tags]. Today is left unwritten.
+        $journal = [
+            [13, 'good', 7, 4, 'Productive morning at the office. Lucius walked me through the new cowl prototype.', 'Lucius, patient as ever.', 'Finished the R&D review.', null, ['work']],
+            [12, 'okay', 5, 6, 'Long board meeting. Nothing decided, everything discussed.', null, null, 'Staying awake through the budget slides.', ['work']],
+            [11, 'great', 8, 3, 'A great patrol. Quiet streets, and I was proud of how calm I stayed.', 'Clear skies over Gotham.', 'Morning run before sunrise.', null, ['training', 'patrol']],
+            [9, 'bad', 4, 8, 'Stressed about the foundation audit. Slept badly and felt anxious all day.', null, null, 'Could not switch off.', ['work', 'sleep']],
+            [8, 'okay', 5, 6, 'Better. Got through the audit paperwork with Alfred.', 'Alfred and his tea.', 'Audit documents filed.', null, ['work']],
+            [7, 'good', 7, 4, 'Training went well. Grateful for the rest day tomorrow.', 'Rest days.', 'New personal best on the bar.', null, ['training']],
+            [5, 'great', 9, 2, 'Excellent day. Accomplished everything on the list and still made dinner.', 'Dinner with Selina.', 'Every mission closed.', null, ['family']],
+            [4, 'good', 7, 4, 'Steady day. Read twenty pages and meditated.', null, 'Kept every habit.', null, ['reading']],
+            [3, 'okay', 6, 5, 'A quiet day, mostly emails.', null, null, 'Too much screen time.', ['work']],
+            [2, 'good', 7, 3, 'Happy with the progress on the quarterly report, finally.', 'A quiet evening.', 'First draft of the report.', null, ['work']],
+            [1, 'okay', 4, 6, 'Tired. Pushed the report back again.', null, null, 'Procrastinating on the report.', ['work', 'sleep']],
+        ];
+
+        foreach ($journal as [$daysAgo, $mood, $energy, $stress, $content, $gratitude, $wins, $struggles, $tags]) {
+            $score = $sentiment->analyze($content);
+            $user->intel()->create([
+                'date' => $today->subDays($daysAgo)->toDateString(),
+                'content' => "<p>{$content}</p>",
+                'mood' => $mood,
+                'energy_level' => $energy,
+                'stress_level' => $stress,
+                'gratitude' => $gratitude,
+                'wins' => $wins,
+                'struggles' => $struggles,
+                'tags' => $tags,
+                'sentiment' => $score['score'],
+                'sentiment_label' => $score['label'],
+            ]);
+        }
 
         AlfredMessage::factory()->for($user)->create([
             'priority' => 'critical',

@@ -8,6 +8,7 @@ use App\Http\Controllers\CaseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FocusSessionController;
 use App\Http\Controllers\HelloController;
+use App\Http\Controllers\IntelController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\MissionDependencyController;
 use App\Http\Controllers\SubtaskController;
@@ -83,6 +84,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/focus-sessions/{session}/complete', 'complete')->whereNumber('session');
         Route::post('/focus-sessions/{session}/abandon', 'abandon')->whereNumber('session');
         Route::patch('/focus-sessions/{session}/energy', 'updateEnergy')->whereNumber('session');
+    });
+
+    Route::controller(IntelController::class)->group(function () {
+        Route::get('/intel', 'index');
+        Route::post('/intel', 'store');
+        Route::get('/intel/prompt', 'prompt');
+        Route::get('/intel/insights', 'insights');
+        Route::get('/intel/{intel}', 'show')->whereNumber('intel');
+        Route::put('/intel/{intel}', 'update')->whereNumber('intel');
+        Route::delete('/intel/{intel}', 'destroy')->whereNumber('intel');
     });
 
     Route::get('/cases', [CaseController::class, 'index']);

@@ -7,6 +7,7 @@ use App\Models\ArsenalLog;
 use App\Models\CaseMilestone;
 use App\Models\Mission;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 /**
@@ -89,11 +90,32 @@ class Achievements
             'arsenal_logs_completed' => ArsenalLog::where('user_id', $user->id)->where('completed', true)->count(),
             'arsenal_streak' => (int) $user->arsenal()->max('best_streak'),
             'intel_entries' => $user->intel()->count(),
+            'intel_with_gratitude' => $user->intel()->whereNotNull('gratitude')->where('gratitude', '!=', '')->count(),
+            'intel_streak' => $this->longestRun($user->intel()->orderBy('date')->pluck('date')),
             'resources_logged' => $user->resources()->count(),
             'alfred_actions_taken' => $user->alfredMessages()->where('action_taken', true)->count(),
             'onboarding_completed' => (int) $user->onboarding_completed,
             'level_reached' => $user->current_level,
             default => null,
         };
+    }
+
+    /**
+     * The longest run of consecutive days among these dates.
+     *
+     * @param  Collection<int, CarbonInterface>  $dates
+     */
+    private function longestRun(Collection $dates): int
+    {
+        $best = $run = 0;
+        $previous = null;
+
+        foreach ($dates as $date) {
+            $run = $previous !== null && (int) $previous->diffInDays($date) === 1 ? $run + 1 : 1;
+            $best = max($best, $run);
+            $previous = $date;
+        }
+
+        return $best;
     }
 }
