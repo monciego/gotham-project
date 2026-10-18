@@ -11,13 +11,15 @@ import { ThemeSync } from "@/components/shell/theme-sync";
 import { getCurrentUser } from "@/lib/server-api";
 
 export default async function GothamLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser();
   // New accounts set up with Alfred first.
-  if (!(await getCurrentUser()).onboarding_completed) {
+  if (!user.onboarding_completed) {
     redirect("/onboarding");
   }
 
   return (
-    <Providers>
+    // The user is already loaded here, so the sidebar and header render right on the first paint.
+    <Providers user={user}>
       <Sidebar />
       {/* Matches the sidebar: icon-only (4rem) on small screens, 256px from md up. */}
       <div className="min-h-svh pl-16 md:pl-64">

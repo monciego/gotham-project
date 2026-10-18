@@ -61,8 +61,8 @@ export function Sidebar() {
                           transition={{ duration: 0.2, ease: "easeOut" }}
                           className={cn(
                             "block overflow-hidden text-xs",
-                            // #6B7280, as specified for the generic names.
-                            active ? "text-primary-foreground" : "text-[#6b7280]",
+                            // Muted grey that still reads as small text: #8A8A92 on the dark sidebar, #6B7280 on the light one.
+                            active ? "text-primary-foreground" : "text-[#6b7280] dark:text-[#8a8a92]",
                           )}
                         >
                           {subtitle}
